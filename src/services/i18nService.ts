@@ -22,7 +22,7 @@ export const LANGUAGES: LanguageOption[] = [
   { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
   { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
   { code: 'bn', name: 'Bengali', nativeName: 'বাংলা' },
-  { code: 'mr', name: 'Marathi', nativeName: 'मराठी' }
+  { code: 'mr', name: 'Marathi', nativeName: 'మరాઠી' }
 ];
 
 const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
@@ -103,5 +103,24 @@ export class I18nService {
   public static translate(key: string, lang: SupportedLanguage = 'en'): string {
     const dict = TRANSLATIONS[lang] || TRANSLATIONS['en'];
     return dict[key] || TRANSLATIONS['en'][key] || key;
+  }
+
+  public static getBCP47LangCode(lang: SupportedLanguage): string {
+    const map: Record<SupportedLanguage, string> = {
+      en: 'en-US',
+      te: 'te-IN',
+      hi: 'hi-IN',
+      ta: 'ta-IN',
+      kn: 'kn-IN',
+      ml: 'ml-IN',
+      bn: 'bn-IN',
+      mr: 'mr-IN'
+    };
+    return map[lang] || 'en-US';
+  }
+
+  public static getLanguageName(lang: SupportedLanguage): string {
+    const opt = LANGUAGES.find((l) => l.code === lang);
+    return opt ? opt.name : 'English';
   }
 }

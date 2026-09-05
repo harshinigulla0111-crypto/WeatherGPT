@@ -4,6 +4,7 @@ import { useWeather } from './WeatherContext';
 import { NovaService } from '../services/novaService';
 import type { NovaChatMessage, SuggestedPrompt } from '../services/novaService';
 import { NovaChatService } from '../services/novaChatService';
+import { I18nService } from '../services/i18nService';
 
 export type NovaOrbState = 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'ALERT';
 
@@ -33,7 +34,7 @@ const NovaContext = createContext<NovaContextType | undefined>(undefined);
 
 export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { selectedLocation, currentWeather, metrics } = useWeather();
+  const { selectedLocation, currentWeather, metrics, currentLanguage } = useWeather();
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [orbState, setOrbState] = useState<NovaOrbState>('IDLE');
@@ -123,11 +124,16 @@ export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[*_#`~]/g, '');
+      // Sanitize "N.O.V.A." to "Nova" so TTS pronounces it as the name Nova, not N-O-V-A
+      const cleanText = text
+        .replace(/N\.O\.V\.A\./gi, 'Nova')
+        .replace(/N\.O\.V\.A/gi, 'Nova')
+        .replace(/[*_#`~]/g, '');
 
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.rate = 1.0;
       utterance.pitch = 1.15; // Pleasant natural female voice pitch
+      utterance.lang = I18nService.getBCP47LangCode(currentLanguage);
 
       const femaleVoice = getFemaleVoice();
       if (femaleVoice) {
@@ -195,7 +201,7 @@ export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const recognition = new SpeechRecognitionAPI();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      recognition.lang = I18nService.getBCP47LangCode(currentLanguage);
 
       recognition.onstart = () => {
         setOrbState('LISTENING');
@@ -281,7 +287,7 @@ export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 2. Generate response via OpenAI or dynamic intelligence engine
     try {
-      const responseMsg = await NovaService.processQuery(text, messages, isDisaster, weatherContextDetails);
+      const responseMsg = await NovaService.processQuery(text, messages, isDisaster, weatherContextDetails, currentLanguage);
 
       // Save assistant response to Supabase & local state
       const savedAssistantMsg = await NovaChatService.saveChatMessage(userId, 'assistant', responseMsg.text);

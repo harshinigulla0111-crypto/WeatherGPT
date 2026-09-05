@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Bell, ChevronDown, MapPin, Moon, ShieldAlert, Sparkles, Sun, User } from 'lucide-react';
+import { AlertTriangle, Bell, ChevronDown, Globe, MapPin, Moon, ShieldAlert, Sparkles, Sun, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWeather } from '../../contexts/WeatherContext';
 import { LocationPicker } from './LocationPicker';
+import { LANGUAGES } from '../../services/i18nService';
+import type { SupportedLanguage } from '../../services/i18nService';
 import type { SpecializedMode } from '../../types/specialized';
 
 interface HeaderProps {
@@ -17,7 +19,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
     tempUnit,
     setTempUnit,
     themeMode,
-    setThemeMode
+    setThemeMode,
+    currentLanguage,
+    setLanguage
   } = useWeather();
   const { user, setIsAuthModalOpen } = useAuth();
 
@@ -169,6 +173,23 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
           >
             °{tempUnit}
           </button>
+
+          {/* Multilingual Selector Dropdown */}
+          <div className="relative">
+            <select
+              value={currentLanguage}
+              onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
+              className="bg-slate-800/80 border border-slate-700/60 text-xs font-semibold text-slate-200 py-1.5 pl-2.5 pr-7 rounded-xl focus:outline-none focus:border-cyan-500 cursor-pointer appearance-none"
+              title="Change Application Language"
+            >
+              {LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code} className="bg-slate-900 text-white">
+                  {lang.nativeName} ({lang.code.toUpperCase()})
+                </option>
+              ))}
+            </select>
+            <Globe className="w-3.5 h-3.5 text-cyan-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
 
           {/* Notifications */}
           <button

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { I18nService } from '../services/i18nService';
+import type { SupportedLanguage } from '../services/i18nService';
 import { LOCATIONS_LIST, WeatherService } from '../services/weatherService';
 import type { AppStateMode } from '../types/disaster';
 import type { CropType, SpecializedMode } from '../types/specialized';
@@ -21,6 +23,9 @@ interface WeatherContextType {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
   toggleThemeMode: () => void;
+  currentLanguage: SupportedLanguage;
+  setLanguage: (lang: SupportedLanguage) => void;
+  t: (key: string) => string;
   selectedLocation: LocationData;
   setSelectedLocation: (loc: LocationData) => void;
   tempUnit: 'C' | 'F';
@@ -57,6 +62,20 @@ export const WeatherProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const saved = localStorage.getItem('weathergpt_theme');
     return saved === 'light' ? 'light' : 'dark';
   });
+
+  const [currentLanguage, setCurrentLanguageState] = useState<SupportedLanguage>(() => {
+    const saved = localStorage.getItem('weathergpt_language') as SupportedLanguage;
+    return saved || 'en';
+  });
+
+  const setLanguage = (lang: SupportedLanguage) => {
+    setCurrentLanguageState(lang);
+    localStorage.setItem('weathergpt_language', lang);
+  };
+
+  const t = (key: string): string => {
+    return I18nService.translate(key, currentLanguage);
+  };
 
   const DEFAULT_FALLBACK_LOCATION: LocationData = {
     id: 'vijayawada',
@@ -218,6 +237,9 @@ export const WeatherProvider: React.FC<{ children: React.ReactNode }> = ({ child
         themeMode,
         setThemeMode,
         toggleThemeMode,
+        currentLanguage,
+        setLanguage,
+        t,
         selectedLocation,
         setSelectedLocation,
         tempUnit,

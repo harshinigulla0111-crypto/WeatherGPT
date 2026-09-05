@@ -1,3 +1,6 @@
+import { I18nService } from './i18nService';
+import type { SupportedLanguage } from './i18nService';
+
 export interface NovaChatMessage {
   id: string;
   sender: 'user' | 'nova';
@@ -55,7 +58,8 @@ export class NovaService {
     query: string,
     history: NovaChatMessage[] = [],
     isDisaster: boolean = false,
-    weatherContext?: WeatherContextDetails
+    weatherContext?: WeatherContextDetails,
+    currentLanguage: SupportedLanguage = 'en'
   ): Promise<NovaChatMessage> {
     const qTrimmed = query.trim();
     const qLower = qTrimmed.toLowerCase();
@@ -78,9 +82,12 @@ export class NovaService {
       try {
         console.log(`[NOVA OpenAI] Processing user query: "${qTrimmed}" for location ${locationName}...`);
 
+        const langName = I18nService.getLanguageName(currentLanguage);
+
         const systemPrompt = `You are N.O.V.A. (Natural Observation & Virtual Assistant), a friendly, highly intelligent, and practical weather assistant in WeatherGPT.
 
 Current Location: ${locationName}
+Target Language: ${langName} (${currentLanguage})
 Real-Time Weather Metrics:
 - Temperature: ${temp}°C (High: ${highTemp}°C, Low: ${lowTemp}°C)
 - Sky Condition: ${condition}
@@ -91,9 +98,10 @@ Real-Time Weather Metrics:
 App Mode: ${isDisaster ? '🚨 RESCUE MODE ACTIVE (EMERGENCY DISASTER SITUATION)' : 'NORMAL MODE'}
 
 Directives:
+- Respond fluently in ${langName} unless the user explicitly speaks in another language.
 - Answer the user's specific question directly, realistically, and conversationally like a helpful local expert.
 - Pay close attention to practical user intent (e.g. drying clothes outside, washing car, running, travel timing, what to wear).
-- Evaluate rain risk (${rainProb}%), humidity (${humidity}%), and sky (${condition}) to give a practical yes/no advice when asked about outdoor activities.
+- Evaluate rain risk (${rainProb}%), humidity (${humidity}%), and sky (${condition}) to give practical advice when asked about outdoor activities.
 - Keep answers concise (2-3 natural sentences max).
 - In RESCUE MODE, focus on emergency safety instructions, shelter locations, and dialing 112.`;
 
