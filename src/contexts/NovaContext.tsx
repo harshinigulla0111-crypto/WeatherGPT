@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useWeather } from './WeatherContext';
 import { NovaService } from '../services/novaService';
 import type { NovaChatMessage, SuggestedPrompt } from '../services/novaService';
 import { NovaChatService } from '../services/novaChatService';
@@ -32,6 +33,7 @@ const NovaContext = createContext<NovaContextType | undefined>(undefined);
 
 export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const { selectedLocation, currentWeather, metrics } = useWeather();
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [orbState, setOrbState] = useState<NovaOrbState>('IDLE');
@@ -212,9 +214,20 @@ export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMessages((prev) => [...prev, userMsg]);
     setOrbState('THINKING');
 
-    // 2. Generate response with conversation history context
-    setTimeout(async () => {
-      const responseMsg = NovaService.processQuery(text, messages, isDisaster);
+    const weatherContextDetails = {
+      location: `${selectedLocation.city}, ${selectedLocation.state || selectedLocation.country}`,
+      temp: currentWeather.temperature,
+      condition: currentWeather.condition,
+      humidity: metrics.humidity,
+      windSpeed: metrics.windSpeed,
+      highTemp: currentWeather.highTemp,
+      lowTemp: currentWeather.lowTemp,
+      rainProbability: metrics.rainProbability
+    };
+
+    // 2. Generate response via OpenAI or dynamic intelligence engine
+    try {
+      const responseMsg = await NovaService.processQuery(text, messages, isDisaster, weatherContextDetails);
 
       // Save assistant response to Supabase & local state
       const savedAssistantMsg = await NovaChatService.saveChatMessage(userId, 'assistant', responseMsg.text);
@@ -232,7 +245,10 @@ export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isAutoSpeak) {
         speakText(responseMsg.text);
       }
-    }, 500);
+    } catch (err) {
+      console.error('[sendMessage Error]', err);
+      setOrbState('IDLE');
+    }
   };
 
   const clearHistory = async () => {
