@@ -1,5 +1,16 @@
-import React, { useRef, useState } from 'react';
-import { AlertTriangle, Bot, Mic, Send, ShieldAlert, Sparkles, Volume2, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AlertCircle,
+  Bot,
+  Mic,
+  MicOff,
+  Send,
+  Square,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X
+} from 'lucide-react';
 import { useNova } from '../../contexts/NovaContext';
 import { useWeather } from '../../contexts/WeatherContext';
 import { VoiceWaveform } from './VoiceWaveform';
@@ -16,8 +27,18 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
     messages,
     sendMessage,
     startVoiceListening,
+    stopVoiceListening,
+    isListening,
     voiceStatusText,
-    suggestedPrompts
+    permissionError,
+    setPermissionError,
+    isAutoSpeak,
+    toggleAutoSpeak,
+    isSpeaking,
+    stopSpeaking,
+    speakText,
+    suggestedPrompts,
+    clearHistory
   } = useNova();
 
   const { appMode } = useWeather();
@@ -25,6 +46,13 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const isDisaster = appMode === 'DISASTER';
+
+  // Auto-scroll chat to bottom on new messages
+  useEffect(() => {
+    if (isOpen) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen]);
 
   if (!isOpen) return null;
 
@@ -68,23 +96,83 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
                 </span>
               </div>
               <p className="text-xs text-slate-300 font-medium">
-                {isDisaster ? "I'm here to help you stay safe." : "Natural Observation & Virtual Assistant"}
+                {isDisaster ? "Emergency Voice & Intelligence Active" : "Natural Observation & Virtual Assistant"}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Auto-speak / Playback toggle control */}
+            <button
+              type="button"
+              onClick={isSpeaking ? stopSpeaking : toggleAutoSpeak}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                isSpeaking
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                  : isAutoSpeak
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+              }`}
+              title={isSpeaking ? 'Stop audio playback' : isAutoSpeak ? 'Auto-speak enabled (Click to mute)' : 'Auto-speak muted (Click to enable)'}
+            >
+              {isSpeaking ? (
+                <>
+                  <Square className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span className="hidden sm:inline">Stop Audio</span>
+                </>
+              ) : isAutoSpeak ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="hidden sm:inline text-[11px]">Audio On</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline text-[11px]">Muted</span>
+                </>
+              )}
+            </button>
+
+            {/* Clear persistent chat history */}
+            <button
+              type="button"
+              onClick={clearHistory}
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-red-950/80 text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/40 transition-all"
+              title="Clear persistent chat history"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+
+            {/* Close modal */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Voice waveform / Status bar */}
+        {/* Microphone Permission Denial Notification */}
+        {permissionError && (
+          <div className="p-3 bg-red-950/90 border-b border-red-800/80 text-red-200 text-xs flex items-center justify-between animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>{permissionError}</span>
+            </div>
+            <button
+              onClick={() => setPermissionError(null)}
+              className="text-xs text-red-300 hover:underline font-bold"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Voice waveform / Status bar when Web Speech STT is active */}
         {orbState === 'LISTENING' && (
-          <div className="bg-cyan-950/40 border-b border-cyan-800/50 p-2 text-center">
-            <span className="text-xs text-cyan-300 font-medium">{voiceStatusText}</span>
+          <div className="bg-cyan-950/50 border-b border-cyan-800/50 p-2.5 text-center flex flex-col items-center gap-1 animate-in fade-in">
+            <span className="text-xs text-cyan-300 font-bold tracking-wide">{voiceStatusText || "Listening for speech..."}</span>
             <VoiceWaveform isActive={true} />
           </div>
         )}
@@ -109,7 +197,7 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
               className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div
-                className={`max-w-[85%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
+                className={`max-w-[85%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg relative group ${
                   msg.sender === 'user'
                     ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-br-none'
                     : msg.isEmergency
@@ -117,9 +205,21 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
                     : 'bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-bl-none'
                 }`}
               >
-                <div className="flex items-center justify-between text-[10px] opacity-70 mb-1 font-mono">
+                <div className="flex items-center justify-between text-[10px] opacity-70 mb-1 font-mono gap-4">
                   <span>{msg.sender === 'user' ? 'YOU' : 'N.O.V.A AI'}</span>
-                  <span>{msg.timestamp}</span>
+                  <div className="flex items-center gap-2">
+                    {msg.sender === 'nova' && (
+                      <button
+                        type="button"
+                        onClick={() => speakText(msg.text)}
+                        className="text-slate-400 hover:text-cyan-300 p-0.5 transition-colors"
+                        title="Read response aloud"
+                      >
+                        <Volume2 className="w-3 h-3" />
+                      </button>
+                    )}
+                    <span>{msg.timestamp}</span>
+                  </div>
                 </div>
                 <p>{msg.text}</p>
 
@@ -169,15 +269,15 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
         <form onSubmit={handleSubmit} className="p-3 sm:p-4 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
           <button
             type="button"
-            onClick={startVoiceListening}
-            className={`p-3 rounded-2xl transition-all ${
-              orbState === 'LISTENING'
-                ? 'bg-cyan-500 text-white animate-pulse'
+            onClick={isListening ? stopVoiceListening : startVoiceListening}
+            className={`p-3 rounded-2xl transition-all relative ${
+              isListening
+                ? 'bg-red-600 text-white animate-pulse ring-4 ring-red-500/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700'
             }`}
-            title="Voice input"
+            title={isListening ? 'Stop listening' : 'Start voice input (Speak now)'}
           >
-            <Mic className="w-5 h-5" />
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
 
           <input
