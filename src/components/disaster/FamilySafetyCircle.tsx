@@ -22,7 +22,7 @@ import { InviteFamilyModal } from './InviteFamilyModal';
 
 export const FamilySafetyCircle: React.FC = () => {
   const { user, setIsAuthModalOpen } = useAuth();
-  const { selectedLocation } = useWeather();
+  const { appMode, selectedLocation } = useWeather();
 
   const [connections, setConnections] = useState<FamilyConnectionData[]>([]);
   const [myStatus, setMyStatus] = useState<'SAFE' | 'AT RISK'>('SAFE');
@@ -131,18 +131,28 @@ export const FamilySafetyCircle: React.FC = () => {
     );
   };
 
+  const isDisaster = appMode === 'DISASTER';
+
   return (
-    <div className="p-6 rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-slate-800 space-y-5 shadow-xl transition-all duration-300">
+    <div className={`p-6 rounded-3xl space-y-5 shadow-xl transition-all duration-300 ${
+      isDisaster
+        ? 'bg-gradient-to-br from-red-950/90 via-slate-950/90 to-red-950/70 border-2 border-red-600/80 shadow-red-600/30'
+        : 'bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-slate-800 shadow-cyan-950/20'
+    }`}>
       {/* Invite Acceptance Toast Notification */}
       {inviteNotification && (
-        <div className="p-3.5 rounded-2xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-200 text-xs flex items-center justify-between animate-in fade-in">
+        <div className={`p-3.5 rounded-2xl text-xs flex items-center justify-between animate-in fade-in ${
+          isDisaster
+            ? 'bg-red-950/90 border border-red-500/50 text-red-200'
+            : 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-200'
+        }`}>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+            <CheckCircle2 className={`w-4 h-4 shrink-0 ${isDisaster ? 'text-red-400' : 'text-cyan-400'}`} />
             <span>{inviteNotification}</span>
           </div>
           <button
             onClick={() => setInviteNotification(null)}
-            className="text-xs text-cyan-400 hover:underline font-bold"
+            className={`text-xs hover:underline font-bold ${isDisaster ? 'text-red-300' : 'text-cyan-400'}`}
           >
             Dismiss
           </button>
@@ -150,17 +160,28 @@ export const FamilySafetyCircle: React.FC = () => {
       )}
 
       {/* Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 ${
+        isDisaster ? 'border-red-900/60' : 'border-slate-800'
+      }`}>
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+          <div className={`p-2.5 rounded-2xl ${
+            isDisaster
+              ? 'bg-red-600/20 text-red-400 border border-red-500/40'
+              : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+          }`}>
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-extrabold text-white tracking-wide font-mono">
-              FAMILY SAFETY CIRCLE
+            <h2 className={`text-base font-extrabold tracking-wide font-mono ${
+              isDisaster ? 'text-red-300' : 'text-white'
+            }`}>
+              {isDisaster ? '🚨 FAMILY SAFETY CIRCLE (RESCUE MONITORING)' : 'FAMILY SAFETY CIRCLE'}
             </h2>
-            <p className="text-xs text-slate-400 font-medium">
-              Connect family & emergency contacts for live disaster safety monitoring
+            <p className={`text-xs font-medium ${isDisaster ? 'text-red-200/80' : 'text-slate-400'}`}>
+              {isDisaster
+                ? 'Emergency contact safety monitoring & live check-ins active'
+                : 'Connect family & emergency contacts for live status updates & check-ins'
+              }
             </p>
           </div>
         </div>
@@ -169,7 +190,11 @@ export const FamilySafetyCircle: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-95"
+            className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md active:scale-95 ${
+              isDisaster
+                ? 'bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 shadow-red-600/30'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-cyan-500/20'
+            }`}
           >
             <Plus className="w-4 h-4" />
             <span>Invite Family</span>
@@ -189,7 +214,11 @@ export const FamilySafetyCircle: React.FC = () => {
 
           <button
             onClick={() => alert(`GPS Location broadcasted: ${selectedLocation.city}, ${selectedLocation.state || selectedLocation.country}`)}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-xs font-medium"
+            className={`p-2 rounded-xl text-xs font-medium ${
+              isDisaster
+                ? 'bg-red-950/80 hover:bg-red-900/80 border border-red-700/80 text-red-300'
+                : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300'
+            }`}
             title="Broadcast Location"
           >
             <Share2 className="w-4 h-4" />

@@ -29,6 +29,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
         { id: 'MAP', label: 'MAP', icon: <Map className="w-4 h-4" /> },
         { id: 'INSIGHTS', label: 'INSIGHTS', icon: <BarChart3 className="w-4 h-4" /> },
         { id: 'SAFETY', label: 'SAFETY', icon: <Shield className="w-4 h-4" /> },
+        { id: 'FAMILY', label: 'FAMILY CIRCLE', icon: <Users className="w-4 h-4" /> },
         { id: 'PROFILE', label: 'PROFILE', icon: <User className="w-4 h-4" /> }
       ];
 
@@ -36,12 +37,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
     ? [
         { id: 'HOME', label: 'Emergency', icon: <ShieldAlert className="w-5 h-5 text-red-400" /> },
         { id: 'MAP', label: 'Map', icon: <Map className="w-5 h-5" /> },
+        { id: 'FAMILY', label: 'Family', icon: <Users className="w-5 h-5" /> },
         { id: 'SAFETY', label: 'Safety', icon: <Shield className="w-5 h-5" /> },
         { id: 'PROFILE', label: 'Profile', icon: <User className="w-5 h-5" /> }
       ]
     : [
         { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" /> },
         { id: 'MAP', label: 'Map', icon: <Map className="w-5 h-5" /> },
+        { id: 'FAMILY', label: 'Family', icon: <Users className="w-5 h-5" /> },
         { id: 'SAFETY', label: 'Safety', icon: <Shield className="w-5 h-5" /> },
         { id: 'PROFILE', label: 'Profile', icon: <User className="w-5 h-5" /> }
       ];

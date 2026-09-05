@@ -28,6 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         { id: 'MAP', label: 'Map', icon: <Map className="w-5 h-5" /> },
         { id: 'INSIGHTS', label: 'Insights', icon: <BarChart3 className="w-5 h-5" /> },
         { id: 'SAFETY', label: 'Safety', icon: <Shield className="w-5 h-5" /> },
+        { id: 'FAMILY', label: 'Family Circle', icon: <Users className="w-5 h-5" /> },
         { id: 'PROFILE', label: 'Profile', icon: <User className="w-5 h-5" /> }
       ];
 
