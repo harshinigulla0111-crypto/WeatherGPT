@@ -49,7 +49,7 @@ export class NovaService {
 
   /**
    * Processes user queries by sending prompt payload + context to OpenAI API,
-   * falling back to dynamic, query-specific weather intelligence.
+   * falling back to realistic, query-specific weather intelligence.
    */
   public static async processQuery(
     query: string,
@@ -62,7 +62,7 @@ export class NovaService {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const locationName = weatherContext?.location || 'Vijayawada';
-    const temp = weatherContext?.temp ?? 28;
+    const temp = weatherContext?.temp ?? 27;
     const condition = weatherContext?.condition || 'Partly Cloudy';
     const humidity = weatherContext?.humidity ?? 70;
     const windSpeed = weatherContext?.windSpeed ?? 15;
@@ -78,22 +78,23 @@ export class NovaService {
       try {
         console.log(`[NOVA OpenAI] Processing user query: "${qTrimmed}" for location ${locationName}...`);
 
-        const systemPrompt = `You are N.O.V.A. (Natural Observation & Virtual Assistant), an expert AI weather assistant in WeatherGPT.
+        const systemPrompt = `You are N.O.V.A. (Natural Observation & Virtual Assistant), a friendly, highly intelligent, and practical weather assistant in WeatherGPT.
+
 Current Location: ${locationName}
-Current Weather Conditions:
+Real-Time Weather Metrics:
 - Temperature: ${temp}°C (High: ${highTemp}°C, Low: ${lowTemp}°C)
 - Sky Condition: ${condition}
 - Humidity: ${humidity}%
 - Wind Speed: ${windSpeed} km/h
 - Rain Probability / Risk: ${rainProb}%
 
-App Mode: ${isDisaster ? '🚨 RESCUE MODE ACTIVE (EMERGENCY DISASTER SITUATION)' : 'NORMAL WEATHER INTELLIGENCE MODE'}
+App Mode: ${isDisaster ? '🚨 RESCUE MODE ACTIVE (EMERGENCY DISASTER SITUATION)' : 'NORMAL MODE'}
 
 Directives:
-- Directly and accurately answer the user's specific query.
-- Use current location (${locationName}) and metrics (${temp}°C, ${condition}, ${rainProb}% rain chance) whenever relevant.
-- Be concise (2-4 sentences max), conversational, helpful, and clear.
-- For general non-weather questions (e.g. "hello", "have you done...", "how are you"), answer politely and offer weather guidance for ${locationName}.
+- Answer the user's specific question directly, realistically, and conversationally like a helpful local expert.
+- Pay close attention to practical user intent (e.g. drying clothes outside, washing car, running, travel timing, what to wear).
+- Evaluate rain risk (${rainProb}%), humidity (${humidity}%), and sky (${condition}) to give a practical yes/no advice when asked about outdoor activities.
+- Keep answers concise (2-3 natural sentences max).
 - In RESCUE MODE, focus on emergency safety instructions, shelter locations, and dialing 112.`;
 
         // Format recent conversation history (up to last 10 messages)
@@ -150,8 +151,7 @@ Directives:
       console.log('[NOVA Notice] VITE_OPENAI_API_KEY is not configured in .env. Operating on dynamic context engine.');
     }
 
-    // 2. Dynamic Context-Aware Fallback Response Engine
-    // (Generates distinct, question-tailored responses reflecting query & location data)
+    // 2. Realistic Context-Aware Fallback Response Engine
     if (isDisaster) {
       if (qLower.includes('danger') || qLower.includes('help') || qLower.includes('stuck')) {
         return {
@@ -197,72 +197,200 @@ Directives:
       };
     }
 
-    // Dynamic Normal Mode Query Router
-    if (qLower.includes('rain') || qLower.includes('shower') || qLower.includes('umbrella')) {
-      const rainMsg = rainProb >= 50
-        ? `Rain chance in ${locationName} is high at ${rainProb}% with ${condition} conditions (${temp}°C). Carrying an umbrella is strongly advised.`
-        : `Rain chance in ${locationName} is currently low at ${rainProb}%. Current temperature is ${temp}°C with ${condition}.`;
+    // Dynamic Intent Router (Evaluates practical real-world scenarios naturally)
+
+    // 1. Drying clothes / Laundry
+    if (
+      qLower.includes('dry') ||
+      qLower.includes('laundry') ||
+      (qLower.includes('clothes') && !qLower.includes('wear'))
+    ) {
+      if (rainProb >= 40 || condition.toLowerCase().includes('cloud') || condition.toLowerCase().includes('rain')) {
+        return {
+          id: Date.now().toString(),
+          sender: 'nova',
+          text: `It's not ideal to dry your clothes outside in ${locationName} right now. With ${condition} skies, ${humidity}% humidity, and a ${rainProb}% rain chance, your laundry will take long to dry and might get wet. Drying indoors is safer today.`,
+          timestamp: timeStr
+        };
+      }
       return {
         id: Date.now().toString(),
         sender: 'nova',
-        text: rainMsg,
+        text: `Yes, you can dry your clothes outside in ${locationName}! Current conditions are ${condition} at ${temp}°C with ${humidity}% humidity, so your laundry should dry well today.`,
         timestamp: timeStr
       };
     }
 
-    if (qLower.includes('travel') || qLower.includes('college') || qLower.includes('leave') || qLower.includes('drive') || qLower.includes('4 pm')) {
-      const travelAdvice = rainProb >= 60
-        ? `For travel around ${locationName}, rain probability peaks at ${rainProb}% with winds up to ${windSpeed} km/h. Leaving earlier before peak rain is recommended.`
-        : `Travel conditions in ${locationName} are favorable. Current temperature is ${temp}°C with clear visibility.`;
+    // 2. Car Wash
+    if (qLower.includes('wash car') || qLower.includes('car wash') || (qLower.includes('wash') && qLower.includes('car'))) {
+      if (rainProb >= 40) {
+        return {
+          id: Date.now().toString(),
+          sender: 'nova',
+          text: `I'd hold off on washing your car in ${locationName} today. With a ${rainProb}% rain chance and ${condition} skies, rain or road splashes could spot your clean car.`,
+          timestamp: timeStr
+        };
+      }
       return {
         id: Date.now().toString(),
         sender: 'nova',
-        text: travelAdvice,
+        text: `Great time for a car wash in ${locationName}! Weather is ${condition} at ${temp}°C with only a ${rainProb}% rain chance.`,
         timestamp: timeStr
       };
     }
 
-    if (qLower.includes('wear') || qLower.includes('carry') || qLower.includes('clothing') || qLower.includes('jacket')) {
+    // 3. Exercise / Outdoor Sports
+    if (
+      qLower.includes('run') ||
+      qLower.includes('jog') ||
+      qLower.includes('workout') ||
+      qLower.includes('cricket') ||
+      qLower.includes('football') ||
+      qLower.includes('sport') ||
+      qLower.includes('gym')
+    ) {
+      if (rainProb >= 60) {
+        return {
+          id: Date.now().toString(),
+          sender: 'nova',
+          text: `If you're planning outdoor sports or running in ${locationName}, try to complete it early. Rain probability is high at ${rainProb}% with ${temp}°C temperature.`,
+          timestamp: timeStr
+        };
+      }
       return {
         id: Date.now().toString(),
         sender: 'nova',
-        text: `In ${locationName} (${temp}°C, ${humidity}% humidity), wear light breathable clothing. ${rainProb >= 40 ? 'Carry a light waterproof jacket or umbrella for afternoon showers.' : 'No heavy winter gear needed today.'}`,
+        text: `Outdoor exercise looks good in ${locationName}! Temperature is ${temp}°C with ${condition} skies and ${windSpeed} km/h wind. Enjoy your workout!`,
         timestamp: timeStr
       };
     }
 
-    if (qLower.includes('safe') || qLower.includes('outside') || qLower.includes('outdoors') || qLower.includes('walk')) {
+    // 4. Outdoor Outing / Picnic / Event
+    if (
+      qLower.includes('picnic') ||
+      qLower.includes('park') ||
+      qLower.includes('beach') ||
+      qLower.includes('outing') ||
+      qLower.includes('event') ||
+      qLower.includes('wedding')
+    ) {
+      if (rainProb >= 50) {
+        return {
+          id: Date.now().toString(),
+          sender: 'nova',
+          text: `Keep a backup indoor plan for outdoor events in ${locationName}. Rain risk is ${rainProb}% with ${condition} conditions at ${temp}°C.`,
+          timestamp: timeStr
+        };
+      }
       return {
         id: Date.now().toString(),
         sender: 'nova',
-        text: `Outdoor conditions in ${locationName} are currently ${condition} at ${temp}°C. ${rainProb >= 50 ? 'Morning outdoor activities are safe, but monitor sky changes after 3 PM.' : 'It is safe to go outside right now.'}`,
+        text: `Weather conditions in ${locationName} are pleasant for an outing! Temperature is ${temp}°C with ${condition} skies. Have a great time!`,
         timestamp: timeStr
       };
     }
 
+    // 5. Travel & Commuting
+    if (
+      qLower.includes('travel') ||
+      qLower.includes('commute') ||
+      qLower.includes('drive') ||
+      qLower.includes('ride') ||
+      qLower.includes('leave') ||
+      qLower.includes('college') ||
+      qLower.includes('4 pm')
+    ) {
+      if (rainProb >= 60) {
+        return {
+          id: Date.now().toString(),
+          sender: 'nova',
+          text: `For travel around ${locationName}, rain probability reaches ${rainProb}% with winds up to ${windSpeed} km/h. Leaving earlier before heavy rain is recommended.`,
+          timestamp: timeStr
+        };
+      }
+      return {
+        id: Date.now().toString(),
+        sender: 'nova',
+        text: `Travel conditions in ${locationName} are favorable. Current temperature is ${temp}°C with ${condition} skies and clear road visibility.`,
+        timestamp: timeStr
+      };
+    }
+
+    // 6. Clothing & Apparel
+    if (
+      qLower.includes('wear') ||
+      qLower.includes('clothing') ||
+      qLower.includes('outfit') ||
+      qLower.includes('jacket') ||
+      qLower.includes('dress')
+    ) {
+      return {
+        id: Date.now().toString(),
+        sender: 'nova',
+        text: `In ${locationName} (${temp}°C, ${humidity}% humidity), wear light breathable clothing. ${
+          rainProb >= 40 ? 'Carrying a light raincoat or umbrella is a smart choice for afternoon rain.' : 'No heavy winter gear needed today.'
+        }`,
+        timestamp: timeStr
+      };
+    }
+
+    // 7. Rain & Umbrella
+    if (qLower.includes('rain') || qLower.includes('shower') || qLower.includes('storm') || qLower.includes('umbrella')) {
+      return {
+        id: Date.now().toString(),
+        sender: 'nova',
+        text: rainProb >= 50
+          ? `Rain chance in ${locationName} is high at ${rainProb}% with ${condition} conditions (${temp}°C). Carrying an umbrella is strongly advised.`
+          : `Rain chance in ${locationName} is currently low at ${rainProb}%. Current temperature is ${temp}°C with ${condition}.`,
+        timestamp: timeStr
+      };
+    }
+
+    // 8. General Outdoor Safety
+    if (qLower.includes('outside') || qLower.includes('outdoors') || qLower.includes('safe') || qLower.includes('walk')) {
+      return {
+        id: Date.now().toString(),
+        sender: 'nova',
+        text: `Outdoor conditions in ${locationName} are currently ${condition} at ${temp}°C. ${
+          rainProb >= 50 ? 'Going outside is fine now, but keep an eye on afternoon rain clouds.' : 'It is safe and clear to step outside right now.'
+        }`,
+        timestamp: timeStr
+      };
+    }
+
+    // 9. Tomorrow / Forecast
     if (qLower.includes('tomorrow')) {
       return {
         id: Date.now().toString(),
         sender: 'nova',
-        text: `Tomorrow in ${locationName}, weather is expected to stabilize near ${highTemp}°C with moderate humidity and lower rain risk.`,
+        text: `Tomorrow in ${locationName}, weather is expected near ${highTemp}°C max with moderate humidity and lower rain risk.`,
         timestamp: timeStr
       };
     }
 
-    if (qLower.includes('hello') || qLower.includes('hi') || qLower.includes('hey') || qLower.includes('who are you')) {
+    // 10. Greetings & Friendly Conversation
+    if (
+      qLower.includes('hello') ||
+      qLower.includes('hi') ||
+      qLower.includes('hey') ||
+      qLower.includes('who are you') ||
+      qLower.includes('how are you') ||
+      qLower.includes('thanks') ||
+      qLower.includes('thank you')
+    ) {
       return {
         id: Date.now().toString(),
         sender: 'nova',
-        text: `Hello! I'm N.O.V.A., your weather AI assistant for ${locationName}. Currently it is ${temp}°C with ${condition}. How can I assist your schedule today?`,
+        text: `Hello! I'm N.O.V.A., your personal weather assistant for ${locationName}. Right now it's ${temp}°C with ${condition} skies. How can I help you plan your day?`,
         timestamp: timeStr
       };
     }
 
-    // Dynamic response for any general / conversational query
+    // 11. Realistic fallback response for any other phrase
     return {
       id: Date.now().toString(),
       sender: 'nova',
-      text: `Regarding "${qTrimmed}": In ${locationName}, current temperature is ${temp}°C (${condition}) with ${humidity}% humidity and ${windSpeed} km/h wind. Let me know if you need specific travel or clothing advisories!`,
+      text: `Regarding "${qTrimmed}" in ${locationName}: Current weather is ${temp}°C (${condition}) with ${humidity}% humidity and a ${rainProb}% rain chance. Let me know if you need specific travel, laundry, or clothing advice!`,
       timestamp: timeStr
     };
   }
