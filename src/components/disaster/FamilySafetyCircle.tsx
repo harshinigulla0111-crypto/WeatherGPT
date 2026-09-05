@@ -78,9 +78,16 @@ export const FamilySafetyCircle: React.FC = () => {
     const newStatus = myStatus === 'SAFE' ? 'AT RISK' : 'SAFE';
     setMyStatus(newStatus);
 
-    if (user?.id) {
-      await ProfileService.updateUserSafetyStatus(user.id, newStatus);
-    }
+    const userId = user?.id || 'demo_user';
+    await ProfileService.updateUserSafetyStatus(userId, newStatus);
+    await loadConnections();
+  };
+
+  const handleAcceptConnection = async (member: FamilyConnectionData) => {
+    const userId = user?.id || 'demo_user';
+    await ProfileService.acceptFamilyInvite(member.invite_token, userId);
+    setInviteNotification(`Connected with ${member.name}! Connection accepted.`);
+    await loadConnections();
   };
 
   const handleRemoveConnection = async (id?: string) => {
@@ -96,17 +103,21 @@ export const FamilySafetyCircle: React.FC = () => {
     setConnections((prev) => [newInvite, ...prev]);
   };
 
-  const getStatusBadge = (status: 'pending' | 'accepted', safetyStatus: string) => {
-    if (status === 'pending') {
+  const getStatusBadge = (member: FamilyConnectionData) => {
+    if (member.status === 'pending') {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+        <button
+          onClick={() => handleAcceptConnection(member)}
+          className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40 flex items-center gap-1 transition-all cursor-pointer hover:scale-105"
+          title="Click to accept & confirm family connection"
+        >
           <Clock className="w-3 h-3 text-amber-400" />
-          PENDING
-        </span>
+          PENDING (Accept)
+        </button>
       );
     }
 
-    if (safetyStatus === 'SAFE') {
+    if (member.safety_status === 'SAFE') {
       return (
         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -115,7 +126,7 @@ export const FamilySafetyCircle: React.FC = () => {
       );
     }
 
-    if (safetyStatus === 'AT RISK') {
+    if (member.safety_status === 'AT RISK') {
       return (
         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-500/20 text-red-300 border border-red-500/40 flex items-center gap-1 animate-pulse">
           <AlertCircle className="w-3 h-3 text-red-400" />
@@ -264,7 +275,7 @@ export const FamilySafetyCircle: React.FC = () => {
                     {member.relationship_label}
                   </span>
                 </div>
-                {getStatusBadge(member.status, member.safety_status)}
+                {getStatusBadge(member)}
               </div>
 
               <div className="space-y-1 text-xs">

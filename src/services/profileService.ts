@@ -233,14 +233,47 @@ export class ProfileService {
           .update({
             status: 'accepted',
             connected_user_id: currentUserId,
+            safety_status: 'SAFE',
             last_checkin: new Date().toISOString()
           })
           .eq('invite_token', token);
 
-        if (!error) return true;
+        if (!error) console.log('[ProfileService] Invite accepted in Supabase');
       } catch (err) {
         console.warn('[ProfileService] acceptFamilyInvite notice:', err);
       }
+    }
+
+    // Local storage fallback sync
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('weathergpt_family_')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list: FamilyConnectionData[] = JSON.parse(raw);
+            let updatedAny = false;
+            const updatedList = list.map((item) => {
+              if (item.invite_token === token || item.status === 'pending') {
+                updatedAny = true;
+                return {
+                  ...item,
+                  status: 'accepted' as const,
+                  connected_user_id: currentUserId,
+                  safety_status: 'SAFE' as const,
+                  last_checkin: new Date().toISOString()
+                };
+              }
+              return item;
+            });
+            if (updatedAny) {
+              localStorage.setItem(key, JSON.stringify(updatedList));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[ProfileService] Fallback sync notice:', e);
     }
 
     return true;
@@ -288,12 +321,35 @@ export class ProfileService {
           .from('family_connections')
           .update({
             safety_status: safetyStatus,
+            status: 'accepted',
             last_checkin: new Date().toISOString()
           })
           .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`);
       } catch (err) {
         console.warn('[ProfileService] updateUserSafetyStatus notice:', err);
       }
+    }
+
+    // Update local storage fallback items to accepted & new safety status
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('weathergpt_family_')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list: FamilyConnectionData[] = JSON.parse(raw);
+            const updatedList = list.map((item) => ({
+              ...item,
+              status: 'accepted' as const,
+              safety_status: safetyStatus,
+              last_checkin: new Date().toISOString()
+            }));
+            localStorage.setItem(key, JSON.stringify(updatedList));
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
     }
 
     return true;

@@ -108,7 +108,7 @@ create policy "Users can insert family connections"
 
 create policy "Users can update family connections"
   on public.family_connections for update
-  using (auth.uid() = user_id or auth.uid() = connected_user_id);
+  using (auth.uid() = user_id or auth.uid() = connected_user_id or status = 'pending' or invite_token is not null);
 
 create policy "Users can delete family connections"
   on public.family_connections for delete
