@@ -22,7 +22,7 @@ import { InviteFamilyModal } from './InviteFamilyModal';
 
 export const FamilySafetyCircle: React.FC = () => {
   const { user, setIsAuthModalOpen } = useAuth();
-  const { appMode, selectedLocation } = useWeather();
+  const { appMode, selectedLocation, t } = useWeather();
 
   const [connections, setConnections] = useState<FamilyConnectionData[]>([]);
   const [myStatus, setMyStatus] = useState<'SAFE' | 'AT RISK'>('SAFE');
@@ -112,7 +112,7 @@ export const FamilySafetyCircle: React.FC = () => {
           title="Click to accept & confirm family connection"
         >
           <Clock className="w-3 h-3 text-amber-400" />
-          PENDING (Accept)
+          {t('pending')} (Accept)
         </button>
       );
     }
@@ -121,7 +121,7 @@ export const FamilySafetyCircle: React.FC = () => {
       return (
         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-          SAFE
+          {t('safe')}
         </span>
       );
     }
@@ -130,7 +130,7 @@ export const FamilySafetyCircle: React.FC = () => {
       return (
         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-500/20 text-red-300 border border-red-500/40 flex items-center gap-1 animate-pulse">
           <AlertCircle className="w-3 h-3 text-red-400" />
-          AT RISK
+          {t('atRisk')}
         </span>
       );
     }
@@ -208,7 +208,7 @@ export const FamilySafetyCircle: React.FC = () => {
             }`}
           >
             <Plus className="w-4 h-4" />
-            <span>Invite Family</span>
+            <span>{t('inviteFamily')}</span>
           </button>
 
           <button
@@ -220,7 +220,7 @@ export const FamilySafetyCircle: React.FC = () => {
             }`}
           >
             <Shield className="w-4 h-4" />
-            <span>I'M {myStatus}</span>
+            <span>{myStatus === 'SAFE' ? t('imSafe') : t('imAtRisk')}</span>
           </button>
 
           <button

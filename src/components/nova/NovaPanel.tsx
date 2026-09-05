@@ -41,7 +41,7 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
     clearHistory
   } = useNova();
 
-  const { appMode } = useWeather();
+  const { appMode, t } = useWeather();
   const [inputText, setInputText] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -123,7 +123,7 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
               ) : isAutoSpeak ? (
                 <>
                   <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="hidden sm:inline text-[11px]">Audio On</span>
+                  <span className="hidden sm:inline text-[11px]">{t('autoSpeak')}</span>
                 </>
               ) : (
                 <>
@@ -138,7 +138,7 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
               type="button"
               onClick={clearHistory}
               className="p-2 rounded-xl bg-slate-800/80 hover:bg-red-950/80 text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/40 transition-all"
-              title="Clear persistent chat history"
+              title={t('clearChat')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -172,7 +172,7 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
         {/* Voice waveform / Status bar when Web Speech STT is active */}
         {orbState === 'LISTENING' && (
           <div className="bg-cyan-950/50 border-b border-cyan-800/50 p-2.5 text-center flex flex-col items-center gap-1 animate-in fade-in">
-            <span className="text-xs text-cyan-300 font-bold tracking-wide">{voiceStatusText || "Listening for speech..."}</span>
+            <span className="text-xs text-cyan-300 font-bold tracking-wide">{voiceStatusText || t('listening')}</span>
             <VoiceWaveform isActive={true} />
           </div>
         )}
@@ -183,10 +183,10 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
             <div className="text-center py-12 space-y-2">
               <Bot className="w-12 h-12 text-slate-600 mx-auto" />
               <h3 className="text-lg font-bold text-white">
-                {isDisaster ? "I'm here to help you stay safe." : "What would you like to know?"}
+                {isDisaster ? t('safetyIsPriority') : t('tagline')}
               </h3>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                Ask any question about weather predictions, travel timing, apparel recommendations, or emergency action.
+                {t('tapToTalk')}
               </p>
             </div>
           )}
@@ -259,7 +259,7 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
                     : 'bg-slate-800/80 hover:bg-slate-700 text-cyan-300 border-slate-700'
                 }`}
               >
-                {prompt.label}
+                {t(prompt.label) || prompt.label}
               </button>
             ))}
           </div>
@@ -282,7 +282,7 @@ export const NovaPanel: React.FC<NovaPanelProps> = ({ onTriggerDangerWizard }) =
 
           <input
             type="text"
-            placeholder={isDisaster ? "Ask N.O.V.A. for emergency help..." : "Ask N.O.V.A. about rain, travel, apparel..."}
+            placeholder={t('askNovaPlaceholder')}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             className="flex-1 px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500"

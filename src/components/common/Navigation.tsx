@@ -11,42 +11,42 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
-  const { appMode } = useWeather();
+  const { appMode, t } = useWeather();
   const { setIsOpen: setIsNovaOpen, orbState } = useNova();
   const isDisaster = appMode === 'DISASTER';
 
   const desktopTabs: { id: NavTab; label: string; icon: React.ReactNode }[] = isDisaster
     ? [
-        { id: 'HOME', label: 'EMERGENCY', icon: <ShieldAlert className="w-4 h-4 text-red-400" /> },
-        { id: 'SAFETY', label: 'SAFETY INSTRUCTIONS', icon: <Shield className="w-4 h-4" /> },
-        { id: 'MAP', label: 'HAZARD MAP', icon: <Map className="w-4 h-4" /> },
-        { id: 'SHELTERS', label: 'SAFE SHELTERS', icon: <Compass className="w-4 h-4" /> },
-        { id: 'FAMILY', label: 'FAMILY CIRCLE', icon: <Users className="w-4 h-4" /> },
-        { id: 'PROFILE', label: 'PROFILE', icon: <User className="w-4 h-4" /> }
+        { id: 'HOME', label: t('emergency'), icon: <ShieldAlert className="w-4 h-4 text-red-400" /> },
+        { id: 'SAFETY', label: t('safetyProtocols'), icon: <Shield className="w-4 h-4" /> },
+        { id: 'MAP', label: t('hazardMap'), icon: <Map className="w-4 h-4" /> },
+        { id: 'SHELTERS', label: t('safeShelters'), icon: <Compass className="w-4 h-4" /> },
+        { id: 'FAMILY', label: t('familyCircle'), icon: <Users className="w-4 h-4" /> },
+        { id: 'PROFILE', label: t('profile'), icon: <User className="w-4 h-4" /> }
       ]
     : [
-        { id: 'HOME', label: 'HOME', icon: <Home className="w-4 h-4" /> },
-        { id: 'MAP', label: 'MAP', icon: <Map className="w-4 h-4" /> },
-        { id: 'INSIGHTS', label: 'INSIGHTS', icon: <BarChart3 className="w-4 h-4" /> },
-        { id: 'SAFETY', label: 'SAFETY', icon: <Shield className="w-4 h-4" /> },
-        { id: 'FAMILY', label: 'FAMILY CIRCLE', icon: <Users className="w-4 h-4" /> },
-        { id: 'PROFILE', label: 'PROFILE', icon: <User className="w-4 h-4" /> }
+        { id: 'HOME', label: t('home'), icon: <Home className="w-4 h-4" /> },
+        { id: 'MAP', label: t('map'), icon: <Map className="w-4 h-4" /> },
+        { id: 'INSIGHTS', label: t('insights'), icon: <BarChart3 className="w-4 h-4" /> },
+        { id: 'SAFETY', label: t('safety'), icon: <Shield className="w-4 h-4" /> },
+        { id: 'FAMILY', label: t('familyCircle'), icon: <Users className="w-4 h-4" /> },
+        { id: 'PROFILE', label: t('profile'), icon: <User className="w-4 h-4" /> }
       ];
 
   const mobileTabs: { id: NavTab; label: string; icon: React.ReactNode }[] = isDisaster
     ? [
-        { id: 'HOME', label: 'Emergency', icon: <ShieldAlert className="w-5 h-5 text-red-400" /> },
-        { id: 'MAP', label: 'Map', icon: <Map className="w-5 h-5" /> },
-        { id: 'FAMILY', label: 'Family', icon: <Users className="w-5 h-5" /> },
-        { id: 'SAFETY', label: 'Safety', icon: <Shield className="w-5 h-5" /> },
-        { id: 'PROFILE', label: 'Profile', icon: <User className="w-5 h-5" /> }
+        { id: 'HOME', label: t('emergency'), icon: <ShieldAlert className="w-5 h-5 text-red-400" /> },
+        { id: 'MAP', label: t('map'), icon: <Map className="w-5 h-5" /> },
+        { id: 'FAMILY', label: t('familyCircle'), icon: <Users className="w-5 h-5" /> },
+        { id: 'SAFETY', label: t('safety'), icon: <Shield className="w-5 h-5" /> },
+        { id: 'PROFILE', label: t('profile'), icon: <User className="w-5 h-5" /> }
       ]
     : [
-        { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" /> },
-        { id: 'MAP', label: 'Map', icon: <Map className="w-5 h-5" /> },
-        { id: 'FAMILY', label: 'Family', icon: <Users className="w-5 h-5" /> },
-        { id: 'SAFETY', label: 'Safety', icon: <Shield className="w-5 h-5" /> },
-        { id: 'PROFILE', label: 'Profile', icon: <User className="w-5 h-5" /> }
+        { id: 'HOME', label: t('home'), icon: <Home className="w-5 h-5" /> },
+        { id: 'MAP', label: t('map'), icon: <Map className="w-5 h-5" /> },
+        { id: 'FAMILY', label: t('familyCircle'), icon: <Users className="w-5 h-5" /> },
+        { id: 'SAFETY', label: t('safety'), icon: <Shield className="w-5 h-5" /> },
+        { id: 'PROFILE', label: t('profile'), icon: <User className="w-5 h-5" /> }
       ];
 
   return (
@@ -84,7 +84,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
           >
             <div className={`w-2.5 h-2.5 rounded-full ${orbState === 'ALERT' ? 'bg-red-400 animate-ping' : 'bg-cyan-200 animate-pulse'}`} />
             <Bot className="w-4 h-4" />
-            <span>N.O.V.A. AI ASSISTANT</span>
+            <span>{t('novaAssistant')}</span>
           </button>
         </div>
       </nav>

@@ -3,63 +3,63 @@ import { Activity, Compass, Droplets, Eye, Gauge, CloudRain, Sunrise, Sunset, Su
 import { useWeather } from '../../contexts/WeatherContext';
 
 export const WeatherMetrics: React.FC = () => {
-  const { metrics } = useWeather();
+  const { metrics, t } = useWeather();
 
   const metricCards = [
     {
       id: 'humidity',
-      label: 'Humidity',
+      label: t('humidity'),
       value: `${metrics.humidity}%`,
       subtitle: 'High moisture level',
       icon: <Droplets className="w-5 h-5 text-cyan-400" />
     },
     {
       id: 'wind',
-      label: 'Wind Speed',
+      label: t('wind'),
       value: `${metrics.windSpeed} km/h`,
       subtitle: `Direction ${metrics.windDirection}`,
       icon: <Wind className="w-5 h-5 text-blue-400" />
     },
     {
       id: 'uv',
-      label: 'UV Index',
+      label: t('uvIndex'),
       value: `${metrics.uvIndex}`,
       subtitle: metrics.uvDescription,
       icon: <SunMedium className="w-5 h-5 text-amber-400" />
     },
     {
       id: 'visibility',
-      label: 'Visibility',
+      label: t('visibility'),
       value: `${metrics.visibility} km`,
       subtitle: 'Clear distance',
       icon: <Eye className="w-5 h-5 text-emerald-400" />
     },
     {
       id: 'pressure',
-      label: 'Pressure',
+      label: t('pressure'),
       value: `${metrics.pressure} hPa`,
       subtitle: 'Stable atmospheric',
       icon: <Gauge className="w-5 h-5 text-purple-400" />
     },
     {
       id: 'aqi',
-      label: 'Air Quality (AQI)',
+      label: t('airQuality'),
       value: `${metrics.aqi}`,
       subtitle: metrics.aqiDescription,
       icon: <Activity className="w-5 h-5 text-green-400" />
     },
     {
       id: 'rain-prob',
-      label: 'Rain Probability',
+      label: t('rainProbability'),
       value: `${metrics.rainProbability}%`,
       subtitle: 'Peak after 3 PM',
       icon: <CloudRain className="w-5 h-5 text-cyan-300" />
     },
     {
       id: 'sun-times',
-      label: 'Sun Cycle',
+      label: t('sunCycle'),
       value: `${metrics.sunrise}`,
-      subtitle: `Sunset: ${metrics.sunset}`,
+      subtitle: `${t('sunset')}: ${metrics.sunset}`,
       icon: <Sunrise className="w-5 h-5 text-amber-300" />
     }
   ];
@@ -67,7 +67,7 @@ export const WeatherMetrics: React.FC = () => {
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold text-slate-400 font-medium">
-        Weather Metrics
+        {t('weatherMetrics')}
       </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">

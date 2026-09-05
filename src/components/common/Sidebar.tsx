@@ -10,26 +10,26 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { appMode } = useWeather();
+  const { appMode, t } = useWeather();
   const { setIsOpen: setIsNovaOpen, orbState } = useNova();
   const isDisaster = appMode === 'DISASTER';
 
   const sidebarItems: { id: NavTab; label: string; icon: React.ReactNode }[] = isDisaster
     ? [
-        { id: 'HOME', label: 'Emergency', icon: <ShieldAlert className="w-5 h-5 text-red-500" /> },
-        { id: 'SAFETY', label: 'Safety Protocols', icon: <Shield className="w-5 h-5" /> },
-        { id: 'MAP', label: 'Hazard Map', icon: <Map className="w-5 h-5" /> },
-        { id: 'SHELTERS', label: 'Safe Shelters', icon: <Compass className="w-5 h-5" /> },
-        { id: 'FAMILY', label: 'Family Circle', icon: <Users className="w-5 h-5" /> },
-        { id: 'PROFILE', label: 'Settings', icon: <Settings className="w-5 h-5" /> }
+        { id: 'HOME', label: t('emergency'), icon: <ShieldAlert className="w-5 h-5 text-red-500" /> },
+        { id: 'SAFETY', label: t('safetyProtocols'), icon: <Shield className="w-5 h-5" /> },
+        { id: 'MAP', label: t('hazardMap'), icon: <Map className="w-5 h-5" /> },
+        { id: 'SHELTERS', label: t('safeShelters'), icon: <Compass className="w-5 h-5" /> },
+        { id: 'FAMILY', label: t('familyCircle'), icon: <Users className="w-5 h-5" /> },
+        { id: 'PROFILE', label: t('settings'), icon: <Settings className="w-5 h-5" /> }
       ]
     : [
-        { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" /> },
-        { id: 'MAP', label: 'Map', icon: <Map className="w-5 h-5" /> },
-        { id: 'INSIGHTS', label: 'Insights', icon: <BarChart3 className="w-5 h-5" /> },
-        { id: 'SAFETY', label: 'Safety', icon: <Shield className="w-5 h-5" /> },
-        { id: 'FAMILY', label: 'Family Circle', icon: <Users className="w-5 h-5" /> },
-        { id: 'PROFILE', label: 'Profile', icon: <User className="w-5 h-5" /> }
+        { id: 'HOME', label: t('home'), icon: <Home className="w-5 h-5" /> },
+        { id: 'MAP', label: t('map'), icon: <Map className="w-5 h-5" /> },
+        { id: 'INSIGHTS', label: t('insights'), icon: <BarChart3 className="w-5 h-5" /> },
+        { id: 'SAFETY', label: t('safety'), icon: <Shield className="w-5 h-5" /> },
+        { id: 'FAMILY', label: t('familyCircle'), icon: <Users className="w-5 h-5" /> },
+        { id: 'PROFILE', label: t('profile'), icon: <User className="w-5 h-5" /> }
       ];
 
   return (

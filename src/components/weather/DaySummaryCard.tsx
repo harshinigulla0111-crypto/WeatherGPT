@@ -3,7 +3,7 @@ import { CloudRain, Compass, Thermometer, Wind } from 'lucide-react';
 import { useWeather } from '../../contexts/WeatherContext';
 
 export const DaySummaryCard: React.FC = () => {
-  const { currentWeather, dailyForecast, metrics, formatTemp, isLoading } = useWeather();
+  const { currentWeather, dailyForecast, metrics, formatTemp, isLoading, t } = useWeather();
 
   const todaySummary = dailyForecast[0]?.summary || 
     `${currentWeather.condition} conditions today with temperature around ${formatTemp(currentWeather.temperature)}.`;
@@ -32,7 +32,7 @@ export const DaySummaryCard: React.FC = () => {
     <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4 shadow-lg transition-all duration-300">
       <div className="border-b border-slate-800 pb-3">
         <h2 className="text-base font-bold text-slate-100">
-          Day Summary
+          {t('daySummary')}
         </h2>
         <p className="text-xs text-slate-300 leading-relaxed mt-1">
           {todaySummary}

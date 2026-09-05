@@ -4,7 +4,7 @@ import { useWeather } from '../../contexts/WeatherContext';
 import { DynamicWeatherBackground } from './DynamicWeatherBackground';
 
 export const WeatherHero: React.FC = () => {
-  const { currentWeather, selectedLocation, metrics, formatTemp, appMode, themeMode } = useWeather();
+  const { currentWeather, selectedLocation, metrics, formatTemp, appMode, themeMode, t } = useWeather();
   const isDisaster = appMode === 'DISASTER';
   const isRisk = appMode === 'RISK';
 
@@ -65,12 +65,12 @@ export const WeatherHero: React.FC = () => {
               <span>{selectedLocation.city}, {selectedLocation.state || selectedLocation.country}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-md">
-              Today's Weather
+              {t('yourWeatherToday')}
             </h1>
           </div>
 
           <span className="text-xs text-slate-200 font-semibold bg-slate-950/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 self-start sm:self-auto shadow-sm">
-            Updated {currentWeather.updatedAt}
+            {t('updated')} {currentWeather.updatedAt}
           </span>
         </div>
 
@@ -83,10 +83,10 @@ export const WeatherHero: React.FC = () => {
               </span>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-white drop-shadow-md">
-                  {currentWeather.condition}
+                  {t(currentWeather.condition) || currentWeather.condition}
                 </div>
                 <div className="text-sm font-semibold text-slate-200 mt-1 drop-shadow-sm">
-                  Feels like {formatTemp(currentWeather.feelsLike)}
+                  {t('feelsLike')} {formatTemp(currentWeather.feelsLike)}
                 </div>
               </div>
             </div>
@@ -103,7 +103,7 @@ export const WeatherHero: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950/60 backdrop-blur-md border border-white/15 flex flex-col justify-between shadow-lg proximity-card">
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
               <Droplets className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Humidity</span>
+              <span>{t('humidity')}</span>
             </div>
             <span className="text-lg font-bold text-white font-mono mt-1">
               {metrics.humidity}%
@@ -114,7 +114,7 @@ export const WeatherHero: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950/60 backdrop-blur-md border border-white/15 flex flex-col justify-between shadow-lg proximity-card">
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
               <Wind className="w-3.5 h-3.5 text-blue-400" />
-              <span>Wind</span>
+              <span>{t('wind')}</span>
             </div>
             <span className="text-lg font-bold text-white font-mono mt-1">
               {metrics.windSpeed} km/h {metrics.windDirection}
@@ -125,7 +125,7 @@ export const WeatherHero: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950/60 backdrop-blur-md border border-white/15 flex flex-col justify-between shadow-lg proximity-card">
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
               <CloudRain className="w-3.5 h-3.5 text-cyan-300" />
-              <span>Rain Chance</span>
+              <span>{t('rainProbability')}</span>
             </div>
             <span className="text-lg font-bold text-cyan-300 font-mono mt-1">
               {metrics.rainProbability}%
@@ -136,7 +136,7 @@ export const WeatherHero: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950/60 backdrop-blur-md border border-white/15 flex flex-col justify-between shadow-lg proximity-card">
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
               <Sun className="w-3.5 h-3.5 text-amber-400" />
-              <span>UV Index</span>
+              <span>{t('uvIndex')}</span>
             </div>
             <span className="text-lg font-bold text-amber-300 font-mono mt-1">
               {metrics.uvIndex} ({metrics.uvDescription})
@@ -147,7 +147,7 @@ export const WeatherHero: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950/60 backdrop-blur-md border border-white/15 flex flex-col justify-between shadow-lg proximity-card">
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
               <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Air Quality</span>
+              <span>{t('airQuality')}</span>
             </div>
             <span className="text-lg font-bold text-emerald-300 font-mono mt-1">
               {metrics.aqi} ({metrics.aqiDescription})
@@ -158,7 +158,7 @@ export const WeatherHero: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-950/60 backdrop-blur-md border border-white/15 flex flex-col justify-between shadow-lg proximity-card">
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
               <Sunrise className="w-3.5 h-3.5 text-amber-300" />
-              <span>Sun Cycle</span>
+              <span>{t('sunCycle')}</span>
             </div>
             <div className="text-xs font-bold text-white font-mono mt-1">
               {metrics.sunrise} / {metrics.sunset}

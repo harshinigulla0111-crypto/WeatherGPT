@@ -4,7 +4,7 @@ import { useWeather } from '../../contexts/WeatherContext';
 import type { DailyForecastItem, WeatherCondition } from '../../types/weather';
 
 export const DailyForecast: React.FC = () => {
-  const { dailyForecast, formatTemp, isLoading } = useWeather();
+  const { dailyForecast, formatTemp, isLoading, t } = useWeather();
   const [selectedDay, setSelectedDay] = useState<DailyForecastItem>(dailyForecast[0]);
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export const DailyForecast: React.FC = () => {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-100">
-              7-Day Forecast
+              {t('sevenDayForecast')}
             </h2>
             <p className="text-xs text-slate-400">
               Upcoming 7-day weather outlook

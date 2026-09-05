@@ -21,7 +21,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
     themeMode,
     setThemeMode,
     currentLanguage,
-    setLanguage
+    setLanguage,
+    t
   } = useWeather();
   const { user, setIsAuthModalOpen } = useAuth();
 
@@ -31,11 +32,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
   const isRisk = appMode === 'RISK';
 
   const specializedModesList: { mode: SpecializedMode; label: string; icon: string }[] = [
-    { mode: 'STANDARD', label: 'Standard View', icon: '☁️' },
-    { mode: 'FARMER', label: 'Farmer Mode', icon: '🌾' },
-    { mode: 'AVIATION', label: 'Aviation Mode', icon: '✈️' },
-    { mode: 'MARINE', label: 'Marine Mode', icon: '⚓' },
-    { mode: 'SMART_CITY', label: 'Smart City Mode', icon: '🏙️' }
+    { mode: 'STANDARD', label: t('standardView'), icon: '☁️' },
+    { mode: 'FARMER', label: t('farmerMode'), icon: '🌾' },
+    { mode: 'AVIATION', label: t('aviationMode'), icon: '✈️' },
+    { mode: 'MARINE', label: t('marineMode'), icon: '⚓' },
+    { mode: 'SMART_CITY', label: t('smartCityMode'), icon: '🏙️' }
   ];
 
   const getHeaderBgClass = () => {
@@ -77,22 +78,22 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
               </span>
               {isDisaster && (
                 <span className="bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
-                  RESCUE MODE ACTIVE
+                  {t('rescueModeActive')}
                 </span>
               )}
               {isRisk && (
                 <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
-                  RISK ACTIVE
+                  {t('riskActive')}
                 </span>
               )}
               {appMode === 'NORMAL' && (
                 <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  NORMAL MODE
+                  {t('normalMode')}
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-400 font-medium hidden sm:block">
-              Intelligence that protects.
+              {t('tagline')}
             </p>
           </div>
         </div>

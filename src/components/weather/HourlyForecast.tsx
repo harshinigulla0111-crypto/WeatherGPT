@@ -4,7 +4,7 @@ import { useWeather } from '../../contexts/WeatherContext';
 import type { WeatherCondition } from '../../types/weather';
 
 export const HourlyForecast: React.FC = () => {
-  const { hourlyForecast, formatTemp } = useWeather();
+  const { hourlyForecast, formatTemp, t } = useWeather();
   const [activeMetric, setActiveMetric] = useState<'temp' | 'rain' | 'wind'>('temp');
 
   const getConditionIcon = (condition: WeatherCondition) => {
@@ -28,10 +28,10 @@ export const HourlyForecast: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
         <div>
           <h2 className="text-base font-bold text-slate-100">
-            Today's Timeline
+            {t('todayTimeline')}
           </h2>
           <p className="text-xs text-slate-400">
-            Hourly weather progression and precipitation forecast
+            {t('hourlyForecast')}
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export const HourlyForecast: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Temperature
+            {t('temperature')}
           </button>
           <button
             onClick={() => setActiveMetric('rain')}
@@ -55,7 +55,7 @@ export const HourlyForecast: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Rain
+            {t('rain')}
           </button>
           <button
             onClick={() => setActiveMetric('wind')}
@@ -65,7 +65,7 @@ export const HourlyForecast: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Wind
+            {t('wind')}
           </button>
         </div>
       </div>
