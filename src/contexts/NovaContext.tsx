@@ -68,6 +68,55 @@ export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, [user?.id]);
 
+  // Helper to select best available female voice on user's system/browser
+  const getFemaleVoice = (): SpeechSynthesisVoice | null => {
+    if (!('speechSynthesis' in window)) return null;
+
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    const femaleVoiceNames = [
+      'google us english',
+      'google uk english female',
+      'samantha',
+      'zira',
+      'victoria',
+      'karen',
+      'moira',
+      'fiona',
+      'jenny',
+      'aria',
+      'eva',
+      'serena',
+      'female'
+    ];
+
+    // Search for explicit female match in english
+    const match = voices.find((v) => {
+      const nameLower = v.name.toLowerCase();
+      const isEnglish = v.lang.toLowerCase().startsWith('en');
+      return isEnglish && femaleVoiceNames.some((femaleName) => nameLower.includes(femaleName));
+    });
+
+    if (match) return match;
+
+    // Fallback to any English voice containing 'female'
+    const fallbackFemale = voices.find((v) => v.lang.toLowerCase().startsWith('en') && v.name.toLowerCase().includes('female'));
+    if (fallbackFemale) return fallbackFemale;
+
+    // Fallback to first English voice
+    return voices.find((v) => v.lang.toLowerCase().startsWith('en')) || voices[0] || null;
+  };
+
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
+
   // Web Speech API Text-to-Speech (TTS)
   const speakText = (text: string) => {
     if (!('speechSynthesis' in window)) return;
@@ -78,7 +127,12 @@ export const NovaProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      utterance.pitch = 1.15; // Pleasant natural female voice pitch
+
+      const femaleVoice = getFemaleVoice();
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
 
       utterance.onstart = () => {
         setIsSpeaking(true);
