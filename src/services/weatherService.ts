@@ -311,10 +311,10 @@ export class WeatherService {
         );
         if (response.ok) {
           const data = await response.json();
-          if (data.alerts && Array.isArray(data.alerts)) {
+          if (data.alerts && Array.isArray(data.alerts) && data.alerts.length > 0) {
             const alerts: WeatherAlert[] = data.alerts.map((a: any, idx: number) => ({
               id: `alert_${idx}`,
-              sender: a.sender_name || 'India Meteorological Department (IMD)',
+              sender: a.sender_name || 'OpenWeatherMap Weather Alert',
               event: a.event || 'Severe Weather Warning',
               severity: 'warning',
               start: new Date(a.start * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
@@ -330,21 +330,9 @@ export class WeatherService {
       }
     }
 
-    // Default IMD Alert Advisory for Indian monsoon region
-    const defaultAlerts: WeatherAlert[] = [
-      {
-        id: 'alert_imd_1',
-        sender: 'India Meteorological Department (IMD)',
-        event: 'Thunderstorm & Lightning Warning',
-        severity: 'watch',
-        start: '2:00 PM',
-        end: '7:00 PM',
-        description: 'Isolated heavy rain with thunderstorms accompanied by gusty winds expected across coastal districts.'
-      }
-    ];
-
-    setToCache(cacheKey, defaultAlerts);
-    return defaultAlerts;
+    // No official alerts returned from API — return empty array honestly without simulating government agencies
+    setToCache(cacheKey, []);
+    return [];
   }
 
   /**

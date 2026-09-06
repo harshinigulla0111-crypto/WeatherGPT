@@ -47,6 +47,7 @@ interface WeatherContextType {
   isLoading: boolean;
   isError: boolean;
   errorMessage: string | null;
+  lastFetchedAt: Date | null;
   refetchWeather: () => Promise<void>;
 
   // Temperature Formatting Helpers
@@ -131,6 +132,7 @@ export const WeatherProvider: React.FC<{ children: React.ReactNode }> = ({ child
     WeatherService.getWeatherDNA('vijayawada')
   );
   const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([]);
+  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(new Date());
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
@@ -191,6 +193,7 @@ export const WeatherProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setMetrics(met);
       setWeatherAlerts(alerts);
       setWeatherDNA(WeatherService.getWeatherDNA(selectedLocation.id));
+      setLastFetchedAt(new Date());
 
       // Dynamic Risk Mode Trigger based on live API metrics & alerts
       const hasSevereAlert = alerts && alerts.length > 0;
@@ -257,6 +260,7 @@ export const WeatherProvider: React.FC<{ children: React.ReactNode }> = ({ child
         metrics,
         weatherDNA,
         weatherAlerts,
+        lastFetchedAt,
         isLoading,
         isError,
         errorMessage,
