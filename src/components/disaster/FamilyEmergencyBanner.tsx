@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertOctagon, CheckCircle2, ChevronRight, MapPin, ShieldAlert, X } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { areToastsEnabled } from '../../services/weatherNotificationService';
 import { FamilyAlertService } from '../../services/familyAlertService';
 import type { FamilySafetyAlertEvent } from '../../services/familyAlertService';
@@ -9,12 +10,19 @@ interface FamilyEmergencyBannerProps {
 }
 
 export const FamilyEmergencyBanner: React.FC<FamilyEmergencyBannerProps> = ({ onNavigateToMember }) => {
+  const { user } = useAuth();
   const [currentAlert, setCurrentAlert] = useState<FamilySafetyAlertEvent | null>(null);
   const [isExiting, setIsExiting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const currentUserId = user?.id || 'demo_user';
     const unsubscribe = FamilyAlertService.subscribe((alert) => {
+      // Do not display emergency popups to the user who triggered their own status change
+      if (alert.senderId === currentUserId) {
+        return;
+      }
+
       // Danger alerts always show (safety-critical priority bypass).
       // Safe confirmation toasts respect the general notification toggle.
       if (alert.newStatus === 'SAFE' && !areToastsEnabled()) {
@@ -36,7 +44,7 @@ export const FamilyEmergencyBanner: React.FC<FamilyEmergencyBannerProps> = ({ on
       unsubscribe();
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [user]);
 
   const handleDismiss = () => {
     setIsExiting(true);

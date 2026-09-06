@@ -201,12 +201,13 @@ class FamilyAlertServiceImpl {
   private handleIncomingAlert(event: FamilySafetyAlertEvent, isLocalTrigger = false) {
     const isDanger = event.newStatus === 'AT RISK';
 
-    // Play sound cue
-    this.playAlertSound(isDanger);
+    // Play sound cue & OS push notification only for alerts from other users
+    if (!isLocalTrigger) {
+      this.playAlertSound(isDanger);
 
-    // Trigger OS-level notification if tab is in background
-    if (typeof document !== 'undefined' && document.hidden) {
-      this.triggerNativePushNotification(event);
+      if (typeof document !== 'undefined' && document.hidden) {
+        this.triggerNativePushNotification(event);
+      }
     }
 
     // Notify all in-app UI listeners

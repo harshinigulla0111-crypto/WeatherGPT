@@ -84,13 +84,16 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
 
   // Listen for real-time safety status updates from connected family members
   useEffect(() => {
+    const currentUserId = user?.id || 'demo_user';
     const unsubscribe = FamilyAlertService.subscribe((alert) => {
+      // Ignore alerts sent by the logged-in user themselves — their status is tracked in myStatus, not in the connected members list
+      if (alert.senderId === currentUserId) return;
+
       setConnections((prev) =>
         prev.map((c) => {
           if (
-            c.id === alert.familyConnectionId ||
-            c.connected_user_id === alert.senderId ||
-            c.id === alert.senderId
+            (c.connected_user_id && c.connected_user_id === alert.senderId) ||
+            (c.id && c.id === alert.familyConnectionId)
           ) {
             return {
               ...c,
@@ -106,7 +109,7 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [user]);
 
   // Auto-scroll and highlight target member card if navigated from alert banner
   useEffect(() => {

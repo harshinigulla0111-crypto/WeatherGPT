@@ -442,13 +442,13 @@ export class ProfileService {
             safety_status: safetyStatus,
             last_checkin: nowIso
           })
-          .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`);
+          .eq('connected_user_id', userId);
       } catch (err) {
         console.warn('[ProfileService] updateUserSafetyStatus notice:', err);
       }
     }
 
-    // Local storage fallback sync across all family lists
+    // Local storage fallback sync across other family members' stored lists
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -458,7 +458,9 @@ export class ProfileService {
             const list: FamilyConnectionData[] = JSON.parse(raw);
             let updatedAny = false;
             const updatedList = list.map((item) => {
-              if (item.connected_user_id === userId || item.user_id === userId || item.id === userId) {
+              // Match strictly where this user is the connected member (connected_user_id === userId)
+              // Do NOT match item.user_id === userId, which represents other members in this user's list
+              if (item.connected_user_id === userId) {
                 updatedAny = true;
                 return {
                   ...item,
