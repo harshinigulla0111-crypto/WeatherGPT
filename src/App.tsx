@@ -9,6 +9,7 @@ import { LocationAutoPrompt } from './components/common/LocationAutoPrompt';
 import { WeatherPushToast } from './components/common/WeatherPushToast';
 
 import { DangerTriageModal } from './components/disaster/DangerTriageModal';
+import { FamilyEmergencyBanner } from './components/disaster/FamilyEmergencyBanner';
 import { FamilySafetyCircle } from './components/disaster/FamilySafetyCircle';
 import { SafeSheltersCard } from './components/disaster/SafeSheltersCard';
 import { NovaOrb } from './components/nova/NovaOrb';
@@ -32,6 +33,7 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('HOME');
   const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
   const [isDangerWizardOpen, setIsDangerWizardOpen] = useState<boolean>(false);
+  const [highlightedMemberId, setHighlightedMemberId] = useState<string | null>(null);
 
   const { appMode } = useWeather();
   const isDisaster = appMode === 'DISASTER';
@@ -40,6 +42,14 @@ const AppContent: React.FC = () => {
     document.title = 'WeatherGPT';
     initProximityEngine();
   }, []);
+
+  const handleNavigateToFamilyMember = (memberId?: string) => {
+    setActiveTab('FAMILY');
+    if (memberId) {
+      setHighlightedMemberId(memberId);
+      setTimeout(() => setHighlightedMemberId(null), 7000);
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -54,7 +64,7 @@ const AppContent: React.FC = () => {
       case 'SHELTERS':
         return <SafeSheltersCard />;
       case 'FAMILY':
-        return <FamilySafetyCircle />;
+        return <FamilySafetyCircle highlightedMemberId={highlightedMemberId} />;
       case 'HOME':
       default:
         return <HomePage onTriggerDangerWizard={() => setIsDangerWizardOpen(true)} />;
@@ -100,6 +110,9 @@ const AppContent: React.FC = () => {
 
       {/* First-Login Location Permission Auto-Prompt */}
       <LocationAutoPrompt />
+
+      {/* Real-Time Family Emergency Alert Banner */}
+      <FamilyEmergencyBanner onNavigateToMember={handleNavigateToFamilyMember} />
 
       {/* Creative Weather-Aware Push Notification Toast */}
       <WeatherPushToast />

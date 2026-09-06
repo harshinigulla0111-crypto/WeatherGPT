@@ -25,6 +25,7 @@ import { useWeather } from '../../contexts/WeatherContext';
 import { ProfileService } from '../../services/profileService';
 import type { FamilyConnectionData } from '../../services/profileService';
 import { InviteFamilyModal } from './InviteFamilyModal';
+import { FamilyAlertService } from '../../services/familyAlertService';
 
 interface SafetyStatusToast {
   id: string;
@@ -49,7 +50,11 @@ function formatCheckinTime(isoString?: string): string {
   return `${diffHours} hours ago`;
 }
 
-export const FamilySafetyCircle: React.FC = () => {
+interface FamilySafetyCircleProps {
+  highlightedMemberId?: string | null;
+}
+
+export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highlightedMemberId }) => {
   const { user, setIsAuthModalOpen } = useAuth();
   const { appMode, selectedLocation, t } = useWeather();
 
@@ -76,6 +81,44 @@ export const FamilySafetyCircle: React.FC = () => {
     const userId = user?.id || 'demo_user';
     setMyStatus(ProfileService.getUserSafetyStatus(userId));
   }, [user]);
+
+  // Listen for real-time safety status updates from connected family members
+  useEffect(() => {
+    const unsubscribe = FamilyAlertService.subscribe((alert) => {
+      setConnections((prev) =>
+        prev.map((c) => {
+          if (
+            c.id === alert.familyConnectionId ||
+            c.connected_user_id === alert.senderId ||
+            c.id === alert.senderId
+          ) {
+            return {
+              ...c,
+              safety_status: alert.newStatus,
+              last_checkin: alert.timestamp
+            };
+          }
+          return c;
+        })
+      );
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Auto-scroll and highlight target member card if navigated from alert banner
+  useEffect(() => {
+    if (highlightedMemberId) {
+      const el =
+        document.getElementById(`family-member-${highlightedMemberId}`) ||
+        document.getElementById('family-member-self');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [highlightedMemberId, connections]);
 
   // Fetch real connected family members from Supabase / Storage
   const loadConnections = async () => {
@@ -127,7 +170,21 @@ export const FamilySafetyCircle: React.FC = () => {
     const userId = user?.id || 'demo_user';
     await ProfileService.updateUserSafetyStatus(userId, newStatus);
 
-    const myName = user?.name || 'You';
+    const myName = user?.name || user?.email?.split('@')[0] || 'You';
+    const locName = selectedLocation?.city
+      ? `${selectedLocation.city}, ${selectedLocation.state || selectedLocation.country}`
+      : 'Current Location';
+
+    // Broadcast in real-time to all connected family members
+    FamilyAlertService.broadcastSafetyAlert({
+      senderId: userId,
+      senderName: myName,
+      relationship: 'Your Account',
+      newStatus,
+      locationName: locName,
+      timestamp: new Date().toISOString()
+    });
+
     triggerSafetyToast({
       id: `toast_self_${Date.now()}`,
       type: newStatus === 'SAFE' ? 'SAFE' : 'DANGER',
@@ -163,6 +220,21 @@ export const FamilySafetyCircle: React.FC = () => {
             : c
         )
       );
+
+      const locName = selectedLocation?.city
+        ? `${selectedLocation.city}, ${selectedLocation.state || selectedLocation.country}`
+        : 'Current Location';
+
+      // Broadcast in real-time to all connected family members
+      FamilyAlertService.broadcastSafetyAlert({
+        senderId: member.connected_user_id || member.id || '',
+        senderName: member.name,
+        relationship: member.relationship_label,
+        newStatus: nextStatus,
+        locationName: locName,
+        timestamp: new Date().toISOString(),
+        familyConnectionId: member.id
+      });
 
       // Trigger high-priority pop-up toast showing whether they are safe or in danger
       triggerSafetyToast({
@@ -500,11 +572,21 @@ export const FamilySafetyCircle: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
           {connections.map((member) => {
             const isMemberDanger = member.safety_status === 'AT RISK';
+            const isHighlighted = Boolean(
+              highlightedMemberId &&
+                (member.id === highlightedMemberId ||
+                  member.connected_user_id === highlightedMemberId)
+            );
 
             return (
               <div
                 key={member.id}
-                className={`p-4 rounded-2xl border flex flex-col justify-between gap-3.5 relative transition-all duration-300 ${
+                id={`family-member-${member.id}`}
+                className={`p-4 rounded-2xl border flex flex-col justify-between gap-3.5 relative transition-all duration-500 ${
+                  isHighlighted
+                    ? 'ring-4 ring-red-500 shadow-2xl shadow-red-600/60 scale-[1.03] z-10 animate-pulse'
+                    : ''
+                } ${
                   isMemberDanger
                     ? 'bg-gradient-to-br from-red-950/80 via-slate-950/90 to-red-950/50 border-red-500/70 shadow-lg shadow-red-950/40'
                     : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
