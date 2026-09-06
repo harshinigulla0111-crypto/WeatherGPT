@@ -179,9 +179,9 @@ class FamilyAlertServiceImpl {
   }
 
   /**
-   * Fires a native OS-level Web Notification if document is backgrounded/hidden
+   * Fires a native OS-level Web Notification on device
    */
-  private triggerNativePushNotification(event: FamilySafetyAlertEvent) {
+  public triggerNativePushNotification(event: FamilySafetyAlertEvent) {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
 
@@ -192,14 +192,16 @@ class FamilyAlertServiceImpl {
         : `✅ ${event.senderName} is now SAFE`;
 
       const body = isDanger
-        ? `${event.senderName} (${event.relationship || 'Family Member'}) reported IN DANGER near ${event.locationName || 'their location'}. Tap to open Family Circle.`
+        ? `${event.senderName} (${event.relationship || 'Family Member'}) reported IN DANGER near ${event.locationName || 'their location'}. Tap to view Family Circle.`
         : `${event.senderName} has confirmed their safety check-in.`;
 
       const notif = new Notification(title, {
         body,
         icon: '/favicon.ico',
-        tag: `family-status-${event.senderId}`,
-        requireInteraction: isDanger
+        badge: '/favicon.ico',
+        tag: `family-status-${event.senderId}-${Date.now()}`,
+        requireInteraction: isDanger,
+        silent: false
       });
 
       notif.onclick = () => {
@@ -217,18 +219,35 @@ class FamilyAlertServiceImpl {
   }
 
   /**
+   * Sends a test device emergency notification to verify OS notification support
+   */
+  public async testDeviceNotification(): Promise<boolean> {
+    const perm = await this.requestWebNotificationPermission();
+    if (perm === 'granted') {
+      this.triggerNativePushNotification({
+        senderId: 'test_device_alert',
+        senderName: 'Family Safety Alert System',
+        relationship: 'System Test',
+        newStatus: 'AT RISK',
+        locationName: 'Your Device',
+        timestamp: new Date().toISOString()
+      });
+      this.playAlertSound(true);
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Internal handler when an alert arrives from either Realtime or BroadcastChannel
    */
   private handleIncomingAlert(event: FamilySafetyAlertEvent, isLocalTrigger = false) {
     const isDanger = event.newStatus === 'AT RISK';
 
-    // Play sound cue & OS push notification only for alerts from other users
+    // Play sound cue & fire OS device notification for alerts from other users
     if (!isLocalTrigger) {
       this.playAlertSound(isDanger);
-
-      if (typeof document !== 'undefined' && document.hidden) {
-        this.triggerNativePushNotification(event);
-      }
+      this.triggerNativePushNotification(event);
     }
 
     // Notify all in-app UI listeners

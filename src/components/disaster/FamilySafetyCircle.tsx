@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertOctagon,
+  Bell,
+  BellOff,
+  BellRing,
   CheckCircle2,
   Clock,
   HeartHandshake,
@@ -63,6 +66,20 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [inviteNotification, setInviteNotification] = useState<string | null>(null);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
+  );
+
+  const handleEnableNotifications = async () => {
+    const perm = await FamilyAlertService.requestWebNotificationPermission();
+    setNotifPermission(perm);
+    if (perm === 'granted') {
+      await FamilyAlertService.testDeviceNotification();
+      setInviteNotification('Device emergency notifications enabled! Test notification sent to your device.');
+    } else if (perm === 'denied') {
+      setInviteNotification('Device notifications blocked in browser. Please allow notifications in site settings.');
+    }
+  };
 
   // Active floating safety status pop-up toast
   const [statusToast, setStatusToast] = useState<SafetyStatusToast | null>(null);
@@ -497,6 +514,36 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
             <Shield className="w-4 h-4" />
             <span>{myStatus === 'SAFE' ? "I'm Safe" : "I'm in Danger"}</span>
           </button>
+
+          {/* Device Notification Control Button */}
+          {notifPermission === 'granted' ? (
+            <button
+              onClick={handleEnableNotifications}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+              title="Device notifications active. Click to send test alert."
+            >
+              <BellRing className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Alerts Active</span>
+            </button>
+          ) : notifPermission === 'default' ? (
+            <button
+              onClick={handleEnableNotifications}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-all shadow-md animate-pulse active:scale-95 cursor-pointer"
+              title="Click to enable instant OS/device notifications for family emergency alerts"
+            >
+              <Bell className="w-4 h-4 text-amber-400" />
+              <span>Enable Device Alerts</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleEnableNotifications}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Notifications blocked in browser settings. Click to retry."
+            >
+              <BellOff className="w-4 h-4 text-slate-500" />
+              <span className="hidden sm:inline">Alerts Blocked</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
