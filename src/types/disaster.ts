@@ -23,6 +23,15 @@ export interface ShelterData {
   longitude: number;
 }
 
+export interface CityHelpline {
+  label: string;
+  department: string;
+  number: string;
+  dialNumber: string;
+  description: string;
+  isPrimary?: boolean;
+}
+
 export interface FamilyMember {
   id: string;
   name: string;

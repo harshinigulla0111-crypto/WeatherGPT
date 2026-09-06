@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Compass, ExternalLink, Info, MapPin, Navigation, PhoneCall, ShieldCheck } from 'lucide-react';
+import { Compass, ExternalLink, Info, MapPin, Navigation, PhoneCall, ShieldAlert } from 'lucide-react';
 import { useWeather } from '../../contexts/WeatherContext';
 import { DisasterService } from '../../services/disasterService';
 import type { ShelterData } from '../../types/disaster';
@@ -46,8 +46,14 @@ export const SafeSheltersCard: React.FC = () => {
     };
   }, [selectedLocation?.city, selectedLocation?.latitude, selectedLocation?.longitude]);
 
+  const cityHelplines = DisasterService.getCityHelplines(
+    selectedLocation?.city || 'Vijayawada',
+    selectedLocation?.state,
+    selectedLocation?.country
+  );
+
   return (
-    <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-5 shadow-xl backdrop-blur-sm">
+    <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6 shadow-xl backdrop-blur-sm">
       {/* Header with Title and Current Location Context */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div className="flex items-center gap-3">
@@ -72,7 +78,7 @@ export const SafeSheltersCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Shelter Grid */}
+      {/* Shelter Grid (without calculated distance box) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {shelters.map((shelter) => {
           const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${selectedLocation?.latitude ?? shelter.latitude},${selectedLocation?.longitude ?? shelter.longitude}&destination=${shelter.latitude},${shelter.longitude}`;
@@ -104,14 +110,6 @@ export const SafeSheltersCard: React.FC = () => {
                   <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
                   <span className="line-clamp-2 text-slate-300">{shelter.address}</span>
                 </p>
-
-                {/* Real Calculated Distance */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
-                  <span className="text-xs text-slate-400">Calculated Distance</span>
-                  <span className="font-mono font-bold text-cyan-400 text-xs">
-                    {shelter.distanceKm.toFixed(1)} km away
-                  </span>
-                </div>
 
                 {/* Honest Capacity & Verification Disclaimer */}
                 <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/60 text-slate-400 flex items-start gap-2">
@@ -145,28 +143,77 @@ export const SafeSheltersCard: React.FC = () => {
         })}
       </div>
 
-      {/* Single Verified Emergency Helpline Footer Banner */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-900 border border-red-900/30 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30">
-            <PhoneCall className="w-4 h-4" />
+      {/* City-Specific Disaster & Emergency Helplines Section */}
+      <div className="p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-4 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30">
+              <PhoneCall className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide font-mono">
+                EMERGENCY & DISASTER HELPLINES — {selectedLocation?.city?.toUpperCase() || 'LOCAL'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                Official verified control room & dispatch helplines for{' '}
+                <span className="text-cyan-300 font-semibold">{selectedLocation?.city || 'your area'}</span>
+                {selectedLocation?.state ? `, ${selectedLocation.state}` : ''}
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Need Urgent Evacuation or Medical Dispatch?
-            </h4>
-            <p className="text-[11px] text-slate-400">
-              For immediate emergency assistance, dial the National Disaster & Police Dispatch.
-            </p>
-          </div>
+          <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-full border border-cyan-800/60 self-start sm:self-auto">
+            24/7 ACTIVE
+          </span>
         </div>
 
-        <a
-          href="tel:112"
-          className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold font-mono tracking-wider flex items-center gap-2 shrink-0 transition-colors shadow-lg shadow-red-950/50"
-        >
-          <span>CALL 112 (NATIONAL)</span>
-        </a>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {cityHelplines.map((item, idx) => (
+            <div
+              key={idx}
+              className={`p-3.5 rounded-xl border flex flex-col justify-between gap-3 transition-all ${
+                item.isPrimary
+                  ? 'bg-red-950/20 border-red-800/50 hover:border-red-700/80'
+                  : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-start justify-between gap-1 mb-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 truncate">
+                    {item.department}
+                  </span>
+                  {item.isPrimary && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-600 text-white shrink-0">
+                      PRIMARY
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-xs font-bold text-slate-100 leading-snug">
+                  {item.label}
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+                  {item.description}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-800/60">
+                <span className="font-mono font-black text-sm text-cyan-300 tracking-wider">
+                  {item.number}
+                </span>
+                <a
+                  href={`tel:${item.dialNumber}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0 ${
+                    item.isPrimary
+                      ? 'bg-red-600 hover:bg-red-500 text-white'
+                      : 'bg-slate-800 hover:bg-slate-700 text-cyan-300'
+                  }`}
+                >
+                  <PhoneCall className="w-3 h-3" />
+                  <span>Call</span>
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
