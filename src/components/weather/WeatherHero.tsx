@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, AlertTriangle, CloudRain, CloudSun, Compass, Droplets, ShieldAlert, Sun, Sunrise, Wind } from 'lucide-react';
+import { Activity, AlertTriangle, CloudRain, Compass, Droplets, ShieldAlert, Sun, Sunrise, Wind } from 'lucide-react';
 import { useWeather } from '../../contexts/WeatherContext';
 import { DynamicWeatherBackground } from './DynamicWeatherBackground';
 
@@ -113,28 +113,22 @@ export const WeatherHero: React.FC = () => {
             </div>
           </div>
 
-          {/* Elegant Ambient Weather Condition Glass Pill (Leaves photo unobstructed) */}
+          {/* Atmospheric Status & Range Glass Badge (Leaves animated scene dominant) */}
           <div className="self-start md:self-center">
-            <div className="p-4 rounded-2xl bg-black/30 backdrop-blur-md border border-white/20 shadow-xl flex items-center gap-3.5">
-              <div className="p-2.5 rounded-xl bg-white/10 text-white shadow-inner">
-                {currentWeather.condition.toLowerCase().includes('rain') ? (
-                  <CloudRain className="w-7 h-7 text-cyan-300 animate-pulse" />
-                ) : currentWeather.condition.toLowerCase().includes('sun') || currentWeather.condition.toLowerCase().includes('clear') ? (
-                  <Sun className="w-7 h-7 text-amber-300 animate-spin-slow" />
-                ) : (
-                  <CloudSun className="w-7 h-7 text-cyan-200" />
-                )}
-              </div>
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-300 block">
-                  Atmospheric Status
-                </span>
-                <span className="text-sm font-bold text-white tracking-tight">
+            <div className="px-5 py-3.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl flex items-center gap-3.5">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Live Animated Scene
+                  </span>
+                </div>
+                <div className="text-base font-bold text-white tracking-tight">
                   {currentWeather.condition}
-                </span>
-                <span className="text-[11px] text-slate-300 block mt-0.5">
-                  High {formatTemp(currentWeather.highTemp)} / Low {formatTemp(currentWeather.lowTemp)}
-                </span>
+                </div>
+                <div className="text-xs font-semibold text-cyan-200/90 font-mono">
+                  H: {formatTemp(currentWeather.highTemp)} <span className="opacity-50">|</span> L: {formatTemp(currentWeather.lowTemp)}
+                </div>
               </div>
             </div>
           </div>

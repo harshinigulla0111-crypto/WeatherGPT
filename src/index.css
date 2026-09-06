@@ -665,3 +665,158 @@ html.light-mode .nova-assistant-card .text-slate-400 {
   }
 }
 
+/* ==================================================
+   LIVE DYNAMIC WEATHER HERO SCENE ANIMATIONS
+================================================== */
+
+/* Rotating Sun Corona */
+@keyframes sunCoronaSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulsing Sun Core Glow */
+@keyframes sunCorePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+    filter: drop-shadow(0 0 35px rgba(251, 191, 36, 0.7));
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: drop-shadow(0 0 60px rgba(245, 158, 11, 0.95));
+  }
+}
+
+/* Moon Glow Breathing */
+@keyframes moonGlowBreathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 20px rgba(186, 230, 253, 0.5));
+  }
+  50% {
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 35px rgba(224, 242, 254, 0.85));
+  }
+}
+
+/* Twinkling Stars */
+@keyframes starTwinkleGlow {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+/* Shooting Star Meteor Streak */
+@keyframes shootingStarGlide {
+  0% {
+    transform: translateX(0) translateY(0) scale(0);
+    opacity: 0;
+  }
+  10% {
+    transform: translateX(30px) translateY(20px) scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(160px) translateY(110px) scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateX(250px) translateY(170px) scale(0.2);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(250px) translateY(170px) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Horizontal Drifting Clouds */
+@keyframes cloudDriftLayer1 {
+  0% {
+    transform: translateX(-30%);
+  }
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+@keyframes cloudDriftLayer2 {
+  0% {
+    transform: translateX(-15%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes cloudDriftLayer3 {
+  0% {
+    transform: translateX(-35%);
+  }
+  100% {
+    transform: translateX(115%);
+  }
+}
+
+/* Live Falling Rain Drops with Natural Wind Slant */
+@keyframes liveRainDropFall {
+  0% {
+    transform: translateY(-80px) translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  90% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(420px) translateX(-35px);
+    opacity: 0;
+  }
+}
+
+/* Multi-stage Lightning Strobe */
+@keyframes lightningSkyFlash {
+  0%, 89%, 95%, 100% {
+    opacity: 0;
+  }
+  90% {
+    opacity: 0.85;
+  }
+  91.5% {
+    opacity: 0.2;
+  }
+  93% {
+    opacity: 0.95;
+  }
+  94.5% {
+    opacity: 0.3;
+  }
+}
+
+/* Horizontal Floating Fog / Mist Haze */
+@keyframes fogDriftHaze {
+  0% {
+    transform: translateX(-6%) scaleY(1);
+  }
+  50% {
+    transform: translateX(6%) scaleY(1.08);
+  }
+  100% {
+    transform: translateX(-6%) scaleY(1);
+  }
+}
+
+
