@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Bell, Globe, HeartHandshake, LogOut, MapPin, Mic, Phone, Shield, User } from 'lucide-react';
+import { Bell, Globe, HeartHandshake, LogOut, MapPin, Mic, Phone, Shield, Sparkles, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWeather } from '../../contexts/WeatherContext';
 import { LANGUAGES } from '../../services/i18nService';
+import { areToastsEnabled, setToastsEnabled } from '../../services/weatherNotificationService';
 
 export const ProfileModal: React.FC = () => {
   const { user, logout, language, setLanguage } = useAuth();
@@ -11,6 +12,13 @@ export const ProfileModal: React.FC = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [notifsEnabled, setNotifsEnabled] = useState(true);
   const [emergencyAlertsEnabled, setEmergencyAlertsEnabled] = useState(true);
+  const [wittyToastsEnabled, setWittyToastsEnabled] = useState(areToastsEnabled());
+
+  const handleToggleWittyToasts = () => {
+    const nextVal = !wittyToastsEnabled;
+    setWittyToastsEnabled(nextVal);
+    setToastsEnabled(nextVal);
+  };
 
   if (!user) {
     return (
@@ -162,6 +170,30 @@ export const ProfileModal: React.FC = () => {
                 className={`w-12 h-6 rounded-full transition-colors relative ${emergencyAlertsEnabled ? 'bg-red-600' : 'bg-slate-800'}`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${emergencyAlertsEnabled ? 'right-1' : 'left-1'}`} />
+              </button>
+            </div>
+
+            {/* Creative Weather Pop-ups Toggle */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between sm:col-span-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-slate-200 block">Creative Weather Pop-ups</span>
+                  <span className="text-[10px] text-slate-500">
+                    Playful, real-time weather toasts & witty commentary based on live conditions
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={handleToggleWittyToasts}
+                className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${wittyToastsEnabled ? 'bg-amber-500' : 'bg-slate-800'}`}
+                aria-label="Toggle Creative Weather Pop-ups"
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${wittyToastsEnabled ? 'right-1' : 'left-1'}`}
+                />
               </button>
             </div>
           </div>
