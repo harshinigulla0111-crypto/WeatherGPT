@@ -204,60 +204,7 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
     );
   };
 
-  // Toggle or update an individual family member's safe/danger status
-  const handleToggleMemberStatus = async (
-    member: FamilyConnectionData,
-    nextStatus: 'SAFE' | 'AT RISK'
-  ) => {
-    const userId = user?.id || 'demo_user';
-    const updated = await ProfileService.updateMemberSafetyStatus(userId, member.id || '', nextStatus);
 
-    if (updated) {
-      setConnections((prev) =>
-        prev.map((c) =>
-          c.id === member.id
-            ? { ...c, safety_status: nextStatus, last_checkin: new Date().toISOString() }
-            : c
-        )
-      );
-
-      const locName = selectedLocation?.city
-        ? `${selectedLocation.city}, ${selectedLocation.state || selectedLocation.country}`
-        : 'Current Location';
-
-      // Broadcast in real-time to all connected family members
-      FamilyAlertService.broadcastSafetyAlert({
-        senderId: member.connected_user_id || member.id || '',
-        senderName: member.name,
-        relationship: member.relationship_label,
-        newStatus: nextStatus,
-        locationName: locName,
-        timestamp: new Date().toISOString(),
-        familyConnectionId: member.id
-      });
-
-      // Trigger high-priority pop-up toast showing whether they are safe or in danger
-      triggerSafetyToast({
-        id: `toast_member_${Date.now()}`,
-        type: nextStatus === 'SAFE' ? 'SAFE' : 'DANGER',
-        memberName: member.name,
-        relationship: member.relationship_label,
-        contactValue: member.contact_value,
-        inviteMethod: member.invite_method,
-        title: nextStatus === 'SAFE' ? `Safety Confirmed: ${member.name}` : `Emergency Alert: ${member.name} in Danger!`,
-        message:
-          nextStatus === 'SAFE'
-            ? `${member.name} (${member.relationship_label}) has checked in and is confirmed SAFE.`
-            : `⚠️ ${member.name} (${member.relationship_label}) has reported being IN DANGER / AT RISK! Please verify their safety immediately.`
-      });
-
-      window.dispatchEvent(
-        new CustomEvent('family-safety-status-updated', {
-          detail: { member: updated, newStatus: nextStatus }
-        })
-      );
-    }
-  };
 
   const handleAcceptConnection = async (member: FamilyConnectionData) => {
     const userId = user?.id || 'demo_user';
@@ -621,30 +568,19 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
 
                 {/* Quick Safe/Danger Mode Toggle & Communication Controls */}
                 <div className="pt-2 border-t border-slate-800/80 space-y-2">
-                  {/* Status Toggle Switch */}
-                  <div className="flex items-center justify-between gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800">
-                    <span className="text-[10px] text-slate-400 font-medium pl-1">
-                      Mode: <strong className={isMemberDanger ? 'text-red-400' : 'text-emerald-400'}>{isMemberDanger ? 'Danger' : 'Safe'}</strong>
-                    </span>
-
+                  {/* Read-Only Status Indicator */}
+                  <div className="flex items-center justify-between gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+                    <span className="text-[11px] text-slate-400 font-medium pl-1">Safety Status</span>
                     {isMemberDanger ? (
-                      <button
-                        onClick={() => handleToggleMemberStatus(member, 'SAFE')}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/50 flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                        title="Mark family member as Safe"
-                      >
-                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                        <span>Mark Safe</span>
-                      </button>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-red-600/30 text-red-200 border border-red-500/60 flex items-center gap-1.5 animate-pulse shadow-sm">
+                        <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+                        <span>IN DANGER</span>
+                      </span>
                     ) : (
-                      <button
-                        onClick={() => handleToggleMemberStatus(member, 'AT RISK')}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-red-600/30 hover:bg-red-600/50 text-red-300 border border-red-500/50 flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                        title="Report family member in Danger / At Risk"
-                      >
-                        <AlertCircle className="w-3 h-3 text-red-400" />
-                        <span>Report Danger</span>
-                      </button>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>SAFE</span>
+                      </span>
                     )}
                   </div>
 

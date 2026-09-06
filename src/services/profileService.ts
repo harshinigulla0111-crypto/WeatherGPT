@@ -173,7 +173,20 @@ export class ProfileService {
     // Local storage fallback for offline / unconfigured database
     try {
       const saved = localStorage.getItem(`weathergpt_family_${userId}`);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: FamilyConnectionData[] = JSON.parse(saved);
+        const synced = parsed.map((item) => {
+          const targetId = item.connected_user_id || item.id;
+          if (targetId) {
+            const statusOverride = localStorage.getItem(`weathergpt_user_safety_status_${targetId}`);
+            if (statusOverride === 'SAFE' || statusOverride === 'AT RISK') {
+              return { ...item, safety_status: statusOverride as 'SAFE' | 'AT RISK' };
+            }
+          }
+          return item;
+        });
+        return synced;
+      }
 
       // Seed initial default family circle members if nothing stored yet
       const defaultMembers: FamilyConnectionData[] = [
@@ -300,7 +313,7 @@ export class ProfileService {
             const list: FamilyConnectionData[] = JSON.parse(raw);
             let updatedAny = false;
             const updatedList = list.map((item) => {
-              if (item.invite_token === token || item.status === 'pending') {
+              if (item.invite_token === token) {
                 updatedAny = true;
                 return {
                   ...item,
@@ -413,6 +426,7 @@ export class ProfileService {
    */
   public static async updateUserSafetyStatus(userId: string, safetyStatus: 'SAFE' | 'AT RISK'): Promise<boolean> {
     if (!userId) return false;
+    const nowIso = new Date().toISOString();
 
     try {
       localStorage.setItem(`weathergpt_user_safety_status_${userId}`, safetyStatus);
@@ -426,12 +440,42 @@ export class ProfileService {
           .from('family_connections')
           .update({
             safety_status: safetyStatus,
-            last_checkin: new Date().toISOString()
+            last_checkin: nowIso
           })
-          .eq('connected_user_id', userId);
+          .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`);
       } catch (err) {
         console.warn('[ProfileService] updateUserSafetyStatus notice:', err);
       }
+    }
+
+    // Local storage fallback sync across all family lists
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('weathergpt_family_')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list: FamilyConnectionData[] = JSON.parse(raw);
+            let updatedAny = false;
+            const updatedList = list.map((item) => {
+              if (item.connected_user_id === userId || item.user_id === userId || item.id === userId) {
+                updatedAny = true;
+                return {
+                  ...item,
+                  safety_status: safetyStatus,
+                  last_checkin: nowIso
+                };
+              }
+              return item;
+            });
+            if (updatedAny) {
+              localStorage.setItem(key, JSON.stringify(updatedList));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[ProfileService] Local storage sync notice:', e);
     }
 
     return true;

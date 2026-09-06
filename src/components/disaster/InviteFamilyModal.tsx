@@ -129,6 +129,10 @@ export const InviteFamilyModal: React.FC<InviteFamilyModalProps> = ({
 
       if (savedConnection) {
         onInviteSent(savedConnection);
+        setName('');
+        setCustomRelationship('');
+        setContactValue('');
+        setRelationship('Mom');
       }
 
       setTimeout(() => {
