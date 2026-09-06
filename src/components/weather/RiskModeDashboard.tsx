@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { useWeather } from '../../contexts/WeatherContext';
 import { DailyForecast } from './DailyForecast';
-import { DaySummaryCard } from './DaySummaryCard';
 import { HourlyForecast } from './HourlyForecast';
 import { WeatherHero } from './WeatherHero';
 import { WeatherIntelligenceCard } from './WeatherIntelligenceCard';
@@ -318,10 +317,7 @@ export const RiskModeDashboard: React.FC = () => {
       {/* 4. Weather Guidance & Forecast Grid */}
       <WeatherIntelligenceCard />
 
-      {/* 5. Day Summary Section */}
-      <DaySummaryCard />
-
-      {/* 6. 7-Day Forecast Section */}
+      {/* 5. 7-Day Forecast Section */}
       <DailyForecast />
     </div>
   );

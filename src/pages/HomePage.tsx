@@ -1,6 +1,5 @@
 import React from 'react';
 import { DailyForecast } from '../components/weather/DailyForecast';
-import { DaySummaryCard } from '../components/weather/DaySummaryCard';
 import { HourlyForecast } from '../components/weather/HourlyForecast';
 import { WeatherHero } from '../components/weather/WeatherHero';
 import { WeatherIntelligenceCard } from '../components/weather/WeatherIntelligenceCard';
@@ -45,10 +44,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onTriggerDangerWizard }) => 
       {/* 3. Your Weather Today (Personalized Guidance) */}
       <WeatherIntelligenceCard />
 
-      {/* 4. Day Summary */}
-      <DaySummaryCard />
-
-      {/* 5. 7-Day Horizontal Forecast (Bottom) */}
+      {/* 4. 7-Day Horizontal Forecast (Bottom) */}
       <DailyForecast />
     </div>
   );
