@@ -85,18 +85,43 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
   // Listen for real-time safety status updates from connected family members
   useEffect(() => {
     const currentUserId = user?.id || 'demo_user';
+    const currentUserName = user?.name || user?.email?.split('@')[0] || '';
+
     const unsubscribe = FamilyAlertService.subscribe((alert) => {
-      // Ignore alerts sent by the logged-in user themselves — their status is tracked in myStatus, not in the connected members list
-      if (alert.senderId === currentUserId) return;
+      // Ignore alerts sent by the logged-in user themselves — their status is tracked in myStatus
+      if (
+        alert.senderId === currentUserId ||
+        (currentUserName && alert.senderName && alert.senderName.trim().toLowerCase() === currentUserName.trim().toLowerCase())
+      ) {
+        return;
+      }
 
       setConnections((prev) =>
         prev.map((c) => {
-          const isMatch =
+          const isIdMatch =
             Boolean(alert.senderId && c.connected_user_id && c.connected_user_id === alert.senderId) ||
             Boolean(alert.senderId && c.user_id && c.user_id === alert.senderId) ||
             Boolean(alert.familyConnectionId && c.id && c.id === alert.familyConnectionId) ||
-            Boolean(alert.senderId && c.id && c.id === alert.senderId) ||
-            Boolean(alert.senderId && c.contact_value && c.contact_value.includes(alert.senderId));
+            Boolean(alert.senderId && c.id && c.id === alert.senderId);
+
+          const isContactMatch = Boolean(
+            alert.senderId &&
+            c.contact_value &&
+            c.contact_value.replace(/[\s\-\(\)\+]/g, '').includes(alert.senderId.replace(/[\s\-\(\)\+]/g, ''))
+          );
+
+          const isNameMatch = Boolean(
+            alert.senderName &&
+            c.name &&
+            (
+              c.name.trim().toLowerCase() === alert.senderName.trim().toLowerCase() ||
+              c.name.toLowerCase().includes(alert.senderName.toLowerCase()) ||
+              alert.senderName.toLowerCase().includes(c.name.toLowerCase()) ||
+              c.name.toLowerCase().split(/\s+/).some((token) => token.length > 2 && alert.senderName.toLowerCase().includes(token))
+            )
+          );
+
+          const isMatch = isIdMatch || isContactMatch || isNameMatch;
 
           if (isMatch) {
             return {

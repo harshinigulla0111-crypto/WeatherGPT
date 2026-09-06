@@ -460,9 +460,16 @@ export class ProfileService {
             const list: FamilyConnectionData[] = JSON.parse(raw);
             let updatedAny = false;
             const updatedList = list.map((item) => {
-              // Match strictly where this user is the connected member (connected_user_id === userId)
-              // Do NOT match item.user_id === userId, which represents other members in this user's list
-              if (item.connected_user_id === userId) {
+              const isMatch =
+                item.connected_user_id === userId ||
+                item.id === userId ||
+                (item.name && userId && (
+                  item.name.toLowerCase().includes(userId.toLowerCase()) ||
+                  userId.toLowerCase().includes(item.name.toLowerCase()) ||
+                  item.name.toLowerCase().split(/\s+/).some((t) => t.length > 2 && userId.toLowerCase().includes(t))
+                ));
+
+              if (isMatch) {
                 updatedAny = true;
                 return {
                   ...item,
