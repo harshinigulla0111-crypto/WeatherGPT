@@ -19,15 +19,23 @@ export const LocationPicker: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or listen for open event
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
+    const handleOpenPicker = () => {
+      setIsOpen(true);
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('open-location-picker', handleOpenPicker);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('open-location-picker', handleOpenPicker);
+    };
   }, []);
 
   // Handle city search autocomplete

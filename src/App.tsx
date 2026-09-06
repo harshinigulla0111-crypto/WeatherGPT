@@ -5,6 +5,8 @@ import { Navigation } from './components/common/Navigation';
 import type { NavTab } from './components/common/Navigation';
 import { NotificationPanel } from './components/common/NotificationPanel';
 import { Sidebar } from './components/common/Sidebar';
+import { LocationAutoPrompt } from './components/common/LocationAutoPrompt';
+import { WeatherPushToast } from './components/common/WeatherPushToast';
 
 import { DangerTriageModal } from './components/disaster/DangerTriageModal';
 import { FamilySafetyCircle } from './components/disaster/FamilySafetyCircle';
@@ -95,6 +97,12 @@ const AppContent: React.FC = () => {
 
       {/* Auth Modal */}
       <AuthModal />
+
+      {/* First-Login Location Permission Auto-Prompt */}
+      <LocationAutoPrompt />
+
+      {/* Creative Weather-Aware Push Notification Toast */}
+      <WeatherPushToast />
     </div>
   );
 };

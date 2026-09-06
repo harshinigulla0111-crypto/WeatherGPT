@@ -26,7 +26,7 @@ export const RiskModeDashboard: React.FC = () => {
   const { selectedLocation } = useWeather();
 
   // Demo manual toggle switch for presentation purposes (independent of automatic hazard detection)
-  const [isRiskActive, setIsRiskActive] = useState<boolean>(true);
+  const [isRiskActive, setIsRiskActive] = useState<boolean>(false);
   const [isRippleActive, setIsRippleActive] = useState<boolean>(false);
   const [isFlashActive, setIsFlashActive] = useState<boolean>(false);
 
@@ -268,7 +268,11 @@ export const RiskModeDashboard: React.FC = () => {
         </div>
       ) : (
         /* CALM INACTIVE STATE (Normal Theme with Breathing Shield & Reassuring Guidance) */
-        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-cyan-500/30 shadow-lg text-center space-y-4 backdrop-blur-md transition-all duration-500 animate-in fade-in">
+        <div
+          className={`p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-cyan-500/30 shadow-lg text-center space-y-4 backdrop-blur-md mode-sweep-neutral transition-all duration-500 ${
+            isFlashActive ? 'header-flash-trigger' : ''
+          }`}
+        >
           <div className="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto calm-breathe-icon">
             <ShieldCheck className="w-8 h-8 text-cyan-300" />
           </div>

@@ -1,8 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import type { AppStateMode } from '../../types/disaster';
 
+// Direct asset imports via Vite for guaranteed resolution & zero path bugs
+import clearDayImg from '../../assets/weather-scenes/clear_day.jpg';
+import sunsetGoldenImg from '../../assets/weather-scenes/sunset_golden.jpg';
+import dawnSunriseImg from '../../assets/weather-scenes/dawn_sunrise.jpg';
+import cloudyDayImg from '../../assets/weather-scenes/cloudy_day.jpg';
+import rainyDayImg from '../../assets/weather-scenes/rainy_day.jpg';
+import thunderstormImg from '../../assets/weather-scenes/thunderstorm.jpg';
+import starryNightImg from '../../assets/weather-scenes/starry_night.jpg';
+import foggyMistImg from '../../assets/weather-scenes/foggy_mist.jpg';
+import riskStormImg from '../../assets/weather-scenes/risk_storm.jpg';
+import rescueEmergencyImg from '../../assets/weather-scenes/rescue_emergency.jpg';
+
 interface DynamicWeatherBackgroundProps {
   condition: string;
+  temperature?: number;
   appMode?: AppStateMode;
   themeMode?: 'dark' | 'light';
   sunrise?: string;
@@ -27,47 +40,98 @@ function parseTimeStringToHours(timeStr?: string): number {
   return hours + minutes / 60;
 }
 
-function computeTimePhase(sunriseStr?: string, sunsetStr?: string): 'DAY' | 'EVENING' | 'NIGHT' {
+type TimePhase = 'DAWN' | 'DAY' | 'SUNSET' | 'NIGHT';
+
+function computeDetailedTimePhase(sunriseStr?: string, sunsetStr?: string): TimePhase {
   const now = new Date();
   const currentHours = now.getHours() + now.getMinutes() / 60;
 
   const sunriseHours = sunriseStr ? parseTimeStringToHours(sunriseStr) : 6.0;
   const sunsetHours = sunsetStr ? parseTimeStringToHours(sunsetStr) : 18.5;
 
-  const eveningStart = sunsetHours - 1.0;
-  const eveningEnd = sunsetHours + 0.5;
+  const dawnStart = sunriseHours - 0.75;
+  const dawnEnd = sunriseHours + 0.75;
+  const sunsetStart = sunsetHours - 1.0;
+  const sunsetEnd = sunsetHours + 0.75;
 
-  if (currentHours >= eveningStart && currentHours <= eveningEnd) {
-    return 'EVENING';
+  if (currentHours >= dawnStart && currentHours < dawnEnd) {
+    return 'DAWN';
+  }
+  if (currentHours >= sunsetStart && currentHours < sunsetEnd) {
+    return 'SUNSET';
+  }
+  if (currentHours >= dawnEnd && currentHours < sunsetStart) {
+    return 'DAY';
+  }
+  return 'NIGHT';
+}
+
+function getPhotographicScene(
+  timePhase: TimePhase,
+  weatherCategory: 'CLEAR' | 'CLOUDS' | 'RAIN' | 'THUNDERSTORM' | 'FOG',
+  appMode: AppStateMode
+): string {
+  // 1. Disaster / Rescue Mode takes highest priority
+  if (appMode === 'DISASTER') {
+    return rescueEmergencyImg;
   }
 
-  if (currentHours > eveningEnd || currentHours < sunriseHours) {
-    return 'NIGHT';
+  // 2. Risk Mode takes high priority
+  if (appMode === 'RISK') {
+    return riskStormImg;
   }
 
-  return 'DAY';
+  // 3. Severe Weather Conditions
+  if (weatherCategory === 'THUNDERSTORM') {
+    return thunderstormImg;
+  }
+  if (weatherCategory === 'RAIN') {
+    return rainyDayImg;
+  }
+  if (weatherCategory === 'FOG') {
+    return foggyMistImg;
+  }
+
+  // 4. Astronomical Time-of-Day Conditions
+  if (timePhase === 'SUNSET') {
+    return sunsetGoldenImg;
+  }
+  if (timePhase === 'DAWN') {
+    return dawnSunriseImg;
+  }
+  if (timePhase === 'NIGHT') {
+    return starryNightImg;
+  }
+
+  // 5. Daylight Conditions
+  if (weatherCategory === 'CLOUDS') {
+    return cloudyDayImg;
+  }
+
+  // Default: Clear Sunny Day
+  return clearDayImg;
 }
 
 export const DynamicWeatherBackground: React.FC<DynamicWeatherBackgroundProps> = ({
   condition,
   appMode = 'NORMAL',
-  themeMode = 'dark',
   sunrise,
   sunset
 }) => {
   const isDisaster = appMode === 'DISASTER';
   const isRisk = appMode === 'RISK';
 
-  // Periodic refresh tick (every 60 seconds)
+  // Live timer tick to re-evaluate time phase smoothly every 60s
   const [, setTick] = useState(Date.now());
   useEffect(() => {
     const timer = setInterval(() => setTick(Date.now()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  const timePhase = computeTimePhase(sunrise, sunset);
+  const timePhase = computeDetailedTimePhase(sunrise, sunset);
   const condLower = (condition || '').toLowerCase();
 
+  // Weather Condition Classification
   let weatherCategory: 'CLEAR' | 'CLOUDS' | 'RAIN' | 'THUNDERSTORM' | 'FOG' = 'CLOUDS';
 
   if (condLower.includes('thunder') || condLower.includes('storm')) {
@@ -88,191 +152,149 @@ export const DynamicWeatherBackground: React.FC<DynamicWeatherBackgroundProps> =
     weatherCategory = 'RAIN';
   }
 
+  // Resolve target scene
+  const targetScene = getPhotographicScene(timePhase, weatherCategory, appMode);
+
+  // Dual-layer smooth cross-fading buffer
+  const [currentScene, setCurrentScene] = useState<string>(targetScene);
+  const [prevScene, setPrevScene] = useState<string | null>(null);
+  const [isCrossFading, setIsCrossFading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (targetScene !== currentScene) {
+      setPrevScene(currentScene);
+      setCurrentScene(targetScene);
+      setIsCrossFading(true);
+
+      const fadeTimer = setTimeout(() => {
+        setIsCrossFading(false);
+        setPrevScene(null);
+      }, 750);
+
+      return () => clearTimeout(fadeTimer);
+    }
+  }, [targetScene, currentScene]);
+
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0 rounded-3xl">
-      {/* 1. EVENING / SUNSET PHASE */}
-      {timePhase === 'EVENING' && (
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-600/40 via-rose-950/80 to-slate-950 transition-all duration-1000">
-          {/* Low Horizon Sunset Disc */}
-          <div className="absolute bottom-4 right-16 w-36 h-36 rounded-full bg-gradient-to-tr from-amber-400 to-rose-500 shadow-[0_0_90px_rgba(244,63,94,0.8)] opacity-90 animate-sun-glow" />
-          <div className="absolute bottom-0 right-0 w-full h-40 bg-gradient-to-t from-rose-950/60 to-transparent" />
-          {/* Soft Evening Clouds */}
-          <div className="absolute top-4 left-4 w-96 opacity-40 animate-float-cloud">
-            <svg viewBox="0 0 200 100" fill="currentColor" className="text-amber-200/40 w-full">
-              <path d="M 20 60 a 25 25 0 0 1 45 -10 a 35 35 0 0 1 60 0 a 25 25 0 0 1 45 10 a 20 20 0 0 1 -10 35 h -140 a 20 20 0 0 1 0 -35 Z" />
+    <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0 rounded-3xl select-none">
+      {/* =========================================================================
+          1. PREVIOUS PHOTOGRAPHIC SCENE LAYER (DURING CROSS-FADE)
+         ========================================================================= */}
+      {prevScene && (
+        <img
+          src={prevScene}
+          alt="Weather Landscape"
+          className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ease-in-out"
+          style={{ opacity: isCrossFading ? 0 : 1 }}
+        />
+      )}
+
+      {/* =========================================================================
+          2. CURRENT ACTIVE PHOTOGRAPHIC SCENE LAYER (RICH, CLEAR, VIBRANT)
+         ========================================================================= */}
+      <img
+        src={currentScene}
+        alt="Weather Landscape Scene"
+        className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ease-in-out"
+        style={{ opacity: isCrossFading ? 1 : 1 }}
+      />
+
+      {/* =========================================================================
+          3. MODE-AWARE COLOR GRADING (SUBTLE, DOES NOT OBSCURE THE PHOTO)
+         ========================================================================= */}
+      {/* Risk Mode: Darkened, Stormy Mood with Amber Alert Tint */}
+      {isRisk && (
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-amber-950/40 to-slate-950/50 mix-blend-multiply pointer-events-none" />
+      )}
+
+      {/* Rescue Mode: Dramatic Crimson Emergency Tint */}
+      {isDisaster && (
+        <div className="absolute inset-0 bg-gradient-to-t from-red-950/85 via-slate-950/60 to-red-950/60 mix-blend-multiply pointer-events-none" />
+      )}
+
+      {/* =========================================================================
+          4. DYNAMIC ATMOSPHERIC LIVE OVERLAYS (RAIN, LIGHTNING, STARS, SUN)
+         ========================================================================= */}
+
+      {/* Rotating Solar Corona (Day + Clear) */}
+      {(timePhase === 'DAY' || timePhase === 'DAWN') && weatherCategory === 'CLEAR' && !isRisk && !isDisaster && (
+        <div className="absolute -top-16 -right-16 w-80 h-80 pointer-events-none opacity-40">
+          <div className="absolute inset-0 animate-sun-rays">
+            <svg viewBox="0 0 400 400" className="w-full h-full text-amber-200">
+              <g stroke="currentColor" strokeWidth="2" strokeDasharray="8 12" opacity="0.5">
+                <line x1="200" y1="200" x2="200" y2="10" />
+                <line x1="200" y1="200" x2="200" y2="390" />
+                <line x1="200" y1="200" x2="10" y2="200" />
+                <line x1="200" y1="200" x2="390" y2="200" />
+                <line x1="200" y1="200" x2="65" y2="65" />
+                <line x1="200" y1="200" x2="335" y2="335" />
+              </g>
             </svg>
           </div>
-          {weatherCategory === 'RAIN' && (
-            <div className="absolute inset-0 overflow-hidden opacity-60">
-              {[15, 35, 55, 75, 90].map((pos, idx) => (
-                <div
-                  key={idx}
-                  className="absolute w-[1.5px] h-16 bg-gradient-to-b from-transparent via-amber-200/60 to-transparent animate-drop-rain"
-                  style={{
-                    left: `${pos}%`,
-                    animationDuration: `${1 + (idx % 3) * 0.3}s`,
-                    animationDelay: `${(idx % 4) * 0.25}s`
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          <div className="absolute inset-10 rounded-full bg-amber-300/30 blur-2xl animate-sun-glow" />
         </div>
       )}
 
-      {/* 2. NIGHT PHASE */}
-      {timePhase === 'NIGHT' && (
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/80 to-slate-950 transition-all duration-1000">
-          {/* Moon for Clear or Light Clouds */}
-          {weatherCategory !== 'THUNDERSTORM' && (
-            <div className="absolute top-6 right-12 w-20 h-20 rounded-full bg-slate-100 shadow-[0_0_60px_rgba(255,255,255,0.7)] opacity-90">
-              <div className="absolute top-2 right-2 w-16 h-16 rounded-full bg-slate-950/80" />
-            </div>
-          )}
-
-          {/* Twinkling Stars for Clear Night */}
-          {weatherCategory === 'CLEAR' && (
-            <div className="absolute inset-0">
-              {[
-                { top: '15%', left: '10%' },
-                { top: '25%', left: '35%' },
-                { top: '10%', left: '60%' },
-                { top: '30%', left: '80%' },
-                { top: '45%', left: '20%' },
-                { top: '50%', left: '70%' },
-                { top: '18%', left: '85%' }
-              ].map((star, idx) => (
-                <div
-                  key={idx}
-                  className="absolute w-1.5 h-1.5 rounded-full bg-white animate-star-twinkle shadow-[0_0_8px_white]"
-                  style={{
-                    top: star.top,
-                    left: star.left,
-                    animationDelay: `${idx * 0.4}s`
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Night Clouds */}
-          {(weatherCategory === 'CLOUDS' || weatherCategory === 'RAIN' || weatherCategory === 'THUNDERSTORM') && (
-            <div className="absolute top-2 -left-10 w-full opacity-50 animate-float-cloud">
-              <svg viewBox="0 0 400 120" fill="currentColor" className="text-slate-900/90 w-full">
-                <path d="M 0 80 Q 60 20 140 50 Q 220 10 300 40 Q 360 10 400 60 L 400 120 L 0 120 Z" />
-              </svg>
-            </div>
-          )}
-
-          {/* Night Rain */}
-          {(weatherCategory === 'RAIN' || weatherCategory === 'THUNDERSTORM') && (
-            <div className="absolute inset-0 overflow-hidden opacity-70">
-              {[10, 25, 40, 55, 70, 85, 95].map((pos, idx) => (
-                <div
-                  key={idx}
-                  className="absolute w-[1.5px] h-18 bg-gradient-to-b from-transparent via-cyan-300/70 to-transparent animate-drop-rain"
-                  style={{
-                    left: `${pos}%`,
-                    animationDuration: `${0.8 + (idx % 3) * 0.2}s`,
-                    animationDelay: `${(idx % 4) * 0.2}s`
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Night Lightning Flash */}
-          {weatherCategory === 'THUNDERSTORM' && (
-            <>
-              <div className="absolute inset-0 bg-cyan-100/20 animate-lightning-flash mix-blend-screen" />
-              <div className="absolute inset-0 bg-indigo-200/15 animate-lightning-flash mix-blend-screen" style={{ animationDelay: '2.8s' }} />
-            </>
-          )}
+      {/* Twinkling Stars (Night Sky) */}
+      {timePhase === 'NIGHT' && !isRisk && !isDisaster && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-60">
+          {[
+            { top: '10%', left: '15%', size: 'w-1 h-1', delay: '0s' },
+            { top: '20%', left: '35%', size: 'w-1.5 h-1.5', delay: '0.5s' },
+            { top: '15%', left: '60%', size: 'w-1 h-1', delay: '1s' },
+            { top: '25%', left: '80%', size: 'w-1.5 h-1.5', delay: '1.5s' },
+            { top: '35%', left: '20%', size: 'w-1 h-1', delay: '0.8s' },
+            { top: '40%', left: '75%', size: 'w-1 h-1', delay: '1.2s' }
+          ].map((star, idx) => (
+            <div
+              key={idx}
+              className={`absolute ${star.size} rounded-full bg-white animate-star-twinkle shadow-[0_0_6px_white]`}
+              style={{ top: star.top, left: star.left, animationDelay: star.delay }}
+            />
+          ))}
         </div>
       )}
 
-      {/* 3. DAY PHASE */}
-      {timePhase === 'DAY' && (
+      {/* Live Falling Rain Drops */}
+      {(weatherCategory === 'RAIN' || weatherCategory === 'THUNDERSTORM' || isRisk || isDisaster) && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-75">
+          {[8, 18, 28, 38, 48, 58, 68, 78, 88, 96].map((pos, idx) => (
+            <div
+              key={idx}
+              className={`absolute bg-gradient-to-b from-transparent via-cyan-200 to-transparent animate-drop-rain ${
+                weatherCategory === 'THUNDERSTORM' || isDisaster
+                  ? 'w-[2px] h-20 opacity-90'
+                  : 'w-[1.5px] h-16 opacity-60'
+              }`}
+              style={{
+                left: `${pos}%`,
+                animationDuration: `${0.7 + (idx % 3) * 0.25}s`,
+                animationDelay: `${(idx % 5) * 0.18}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Lightning Flash (Thunderstorm & Emergency Modes) */}
+      {(weatherCategory === 'THUNDERSTORM' || isDisaster) && (
         <>
-          {weatherCategory === 'CLEAR' && (
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/30 via-sky-800/80 to-slate-950 transition-all duration-1000">
-              <div className="absolute -top-10 -right-10 w-72 h-72 rounded-full bg-amber-400/30 blur-3xl animate-sun-glow" />
-              <div className="absolute top-4 right-12 w-28 h-28 rounded-full bg-gradient-to-tr from-amber-300 to-amber-100 shadow-[0_0_80px_rgba(251,191,36,0.8)] opacity-90 animate-sun-glow" />
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-amber-200/20 via-transparent to-transparent rotate-12 blur-md" />
-            </div>
-          )}
-
-          {weatherCategory === 'CLOUDS' && (
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-sky-900/80 to-blue-950 transition-all duration-1000">
-              <div className="absolute -top-12 right-1/4 w-80 h-80 rounded-full bg-cyan-400/20 blur-3xl animate-sun-glow" />
-              <div className="absolute top-2 -left-10 w-96 opacity-40 animate-float-cloud">
-                <svg viewBox="0 0 200 100" fill="currentColor" className="text-sky-200/50 w-full">
-                  <path d="M 20 60 a 25 25 0 0 1 45 -10 a 35 35 0 0 1 60 0 a 25 25 0 0 1 45 10 a 20 20 0 0 1 -10 35 h -140 a 20 20 0 0 1 0 -35 Z" />
-                </svg>
-              </div>
-            </div>
-          )}
-
-          {weatherCategory === 'RAIN' && (
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/90 to-cyan-950/90 transition-all duration-1000">
-              <div className="absolute -top-10 left-0 right-0 h-40 bg-slate-800/40 blur-xl" />
-              <div className="absolute inset-0 overflow-hidden opacity-60">
-                {[10, 25, 40, 55, 70, 85].map((pos, idx) => (
-                  <div
-                    key={idx}
-                    className="absolute w-[1.5px] h-16 bg-gradient-to-b from-transparent via-cyan-300/60 to-transparent animate-drop-rain"
-                    style={{
-                      left: `${pos}%`,
-                      animationDuration: `${1 + (idx % 3) * 0.3}s`,
-                      animationDelay: `${(idx % 4) * 0.25}s`
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {weatherCategory === 'THUNDERSTORM' && (
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-950 to-indigo-950/90 transition-all duration-1000">
-              <div className="absolute inset-0 bg-cyan-100/20 animate-lightning-flash mix-blend-screen" />
-              <div className="absolute inset-0 opacity-80 overflow-hidden">
-                {[12, 24, 36, 48, 60, 72, 84].map((pos, idx) => (
-                  <div
-                    key={idx}
-                    className="absolute w-[2px] h-24 bg-gradient-to-b from-transparent via-blue-200 to-transparent animate-drop-rain"
-                    style={{
-                      left: `${pos}%`,
-                      animationDuration: `${0.6 + (idx % 3) * 0.15}s`,
-                      animationDelay: `${(idx % 4) * 0.2}s`
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {weatherCategory === 'FOG' && (
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-950 transition-all duration-1000">
-              <div className="absolute inset-0 bg-slate-400/15 backdrop-blur-md animate-fog-drift" />
-            </div>
-          )}
+          <div className="absolute inset-0 bg-cyan-100/25 animate-lightning-flash mix-blend-screen pointer-events-none" />
+          <div
+            className="absolute inset-0 bg-indigo-200/20 animate-lightning-flash mix-blend-screen pointer-events-none"
+            style={{ animationDelay: '2.5s' }}
+          />
         </>
       )}
 
-      {/* 4. Global Mode Overlay Wash */}
-      {isRisk && (
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-transparent mix-blend-color-dodge pointer-events-none" />
-      )}
-      {isDisaster && (
-        <div className="absolute inset-0 bg-gradient-to-r from-red-950/50 via-red-900/30 to-transparent mix-blend-color-dodge pointer-events-none" />
-      )}
+      {/* =========================================================================
+          5. SUBTLE CONTRAST SCRIM (KEEPS PHOTO 100% VISIBLE WHILE ENSURING READABILITY)
+         ========================================================================= */}
+      {/* Bottom to Top Scrim: Only dark at the very bottom where metrics sit */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/15 pointer-events-none" />
 
-      {/* 5. Dark Vignette Layer for 100% Crisp Text Readability */}
-      <div className={`absolute inset-0 transition-opacity duration-300 ${
-        themeMode === 'light'
-          ? 'bg-gradient-to-t from-slate-950/90 via-slate-950/65 to-slate-950/40 backdrop-blur-[2px]'
-          : 'bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-slate-950/45 backdrop-blur-[1px]'
-      }`} />
+      {/* Left to Right Scrim: Soft feather behind the large degree display */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
     </div>
   );
 };
