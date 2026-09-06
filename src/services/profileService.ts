@@ -176,11 +176,13 @@ export class ProfileService {
       if (saved) {
         const parsed: FamilyConnectionData[] = JSON.parse(saved);
         const synced = parsed.map((item) => {
-          const targetId = item.connected_user_id || item.id;
-          if (targetId) {
-            const statusOverride = localStorage.getItem(`weathergpt_user_safety_status_${targetId}`);
-            if (statusOverride === 'SAFE' || statusOverride === 'AT RISK') {
-              return { ...item, safety_status: statusOverride as 'SAFE' | 'AT RISK' };
+          const targetIds = [item.connected_user_id, item.user_id, item.id].filter(Boolean);
+          for (const targetId of targetIds) {
+            if (targetId) {
+              const statusOverride = localStorage.getItem(`weathergpt_user_safety_status_${targetId}`);
+              if (statusOverride === 'SAFE' || statusOverride === 'AT RISK') {
+                return { ...item, safety_status: statusOverride as 'SAFE' | 'AT RISK' };
+              }
             }
           }
           return item;

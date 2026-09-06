@@ -91,14 +91,18 @@ export const FamilySafetyCircle: React.FC<FamilySafetyCircleProps> = ({ highligh
 
       setConnections((prev) =>
         prev.map((c) => {
-          if (
-            (c.connected_user_id && c.connected_user_id === alert.senderId) ||
-            (c.id && c.id === alert.familyConnectionId)
-          ) {
+          const isMatch =
+            Boolean(alert.senderId && c.connected_user_id && c.connected_user_id === alert.senderId) ||
+            Boolean(alert.senderId && c.user_id && c.user_id === alert.senderId) ||
+            Boolean(alert.familyConnectionId && c.id && c.id === alert.familyConnectionId) ||
+            Boolean(alert.senderId && c.id && c.id === alert.senderId) ||
+            Boolean(alert.senderId && c.contact_value && c.contact_value.includes(alert.senderId));
+
+          if (isMatch) {
             return {
               ...c,
               safety_status: alert.newStatus,
-              last_checkin: alert.timestamp
+              last_checkin: alert.timestamp || new Date().toISOString()
             };
           }
           return c;

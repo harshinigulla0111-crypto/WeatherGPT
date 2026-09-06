@@ -59,6 +59,27 @@ class FamilyAlertServiceImpl {
             this.handleIncomingAlert(payload.payload, false);
           }
         })
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'family_connections' },
+          (payload: any) => {
+            if (payload?.new) {
+              const updatedRow = payload.new;
+              this.handleIncomingAlert(
+                {
+                  senderId: updatedRow.connected_user_id || updatedRow.user_id || updatedRow.id,
+                  senderName: updatedRow.name || 'Family Member',
+                  relationship: updatedRow.relationship_label,
+                  newStatus: updatedRow.safety_status,
+                  locationName: 'Live Location',
+                  timestamp: updatedRow.last_checkin || new Date().toISOString(),
+                  familyConnectionId: updatedRow.id
+                },
+                false
+              );
+            }
+          }
+        )
         .subscribe((status: string) => {
           if (status === 'SUBSCRIBED') {
             console.log('[FamilyAlertService] Subscribed to Supabase Realtime family alerts');
