@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
+  AlertOctagon,
   CheckCircle2,
   Clock,
   HeartHandshake,
@@ -8,17 +9,45 @@ import {
   MapPin,
   MessageSquare,
   Phone,
+  PhoneCall,
   Plus,
+  Radio,
   Share2,
   Shield,
+  ShieldAlert,
+  ShieldCheck,
   Trash2,
-  Users
+  Users,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWeather } from '../../contexts/WeatherContext';
 import { ProfileService } from '../../services/profileService';
 import type { FamilyConnectionData } from '../../services/profileService';
 import { InviteFamilyModal } from './InviteFamilyModal';
+
+interface SafetyStatusToast {
+  id: string;
+  type: 'SAFE' | 'DANGER';
+  memberName: string;
+  relationship: string;
+  contactValue?: string;
+  inviteMethod?: 'whatsapp' | 'email';
+  title: string;
+  message: string;
+}
+
+function formatCheckinTime(isoString?: string): string {
+  if (!isoString) return 'Recently';
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins === 1) return '1 min ago';
+  if (diffMins < 60) return `${diffMins} mins ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours === 1) return '1 hour ago';
+  return `${diffHours} hours ago`;
+}
 
 export const FamilySafetyCircle: React.FC = () => {
   const { user, setIsAuthModalOpen } = useAuth();
@@ -29,6 +58,24 @@ export const FamilySafetyCircle: React.FC = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [inviteNotification, setInviteNotification] = useState<string | null>(null);
+
+  // Active floating safety status pop-up toast
+  const [statusToast, setStatusToast] = useState<SafetyStatusToast | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSafetyToast = (toast: SafetyStatusToast) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setStatusToast(toast);
+    toastTimerRef.current = setTimeout(() => {
+      setStatusToast(null);
+    }, toast.type === 'DANGER' ? 10000 : 6500);
+  };
+
+  // Sync user's personal safety status from their account
+  useEffect(() => {
+    const userId = user?.id || 'demo_user';
+    setMyStatus(ProfileService.getUserSafetyStatus(userId));
+  }, [user]);
 
   // Fetch real connected family members from Supabase / Storage
   const loadConnections = async () => {
@@ -53,7 +100,6 @@ export const FamilySafetyCircle: React.FC = () => {
         ProfileService.acceptFamilyInvite(inviteToken, user.id).then((success) => {
           if (success) {
             setInviteNotification('Family Circle invitation accepted successfully!');
-            // Clean up URL parameter
             window.history.replaceState({}, document.title, window.location.pathname);
             loadConnections();
           }
@@ -73,14 +119,72 @@ export const FamilySafetyCircle: React.FC = () => {
     }
   }, [user]);
 
-  // Toggle logged-in user's safety status
+  // Toggle logged-in user's own safety status
   const toggleMyStatus = async () => {
     const newStatus = myStatus === 'SAFE' ? 'AT RISK' : 'SAFE';
     setMyStatus(newStatus);
 
     const userId = user?.id || 'demo_user';
     await ProfileService.updateUserSafetyStatus(userId, newStatus);
-    await loadConnections();
+
+    const myName = user?.name || 'You';
+    triggerSafetyToast({
+      id: `toast_self_${Date.now()}`,
+      type: newStatus === 'SAFE' ? 'SAFE' : 'DANGER',
+      memberName: myName,
+      relationship: 'Your Account',
+      title: newStatus === 'SAFE' ? 'Safety Broadcast: You are SAFE' : 'Emergency Alert: You are IN DANGER',
+      message:
+        newStatus === 'SAFE'
+          ? 'You have updated your account status to SAFE. Your Family Circle can see your safe check-in.'
+          : '⚠️ You broadcasted your status as AT RISK / IN DANGER! All connected family members are alerted.'
+    });
+
+    window.dispatchEvent(
+      new CustomEvent('family-safety-status-updated', {
+        detail: { memberId: userId, memberName: myName, newStatus }
+      })
+    );
+  };
+
+  // Toggle or update an individual family member's safe/danger status
+  const handleToggleMemberStatus = async (
+    member: FamilyConnectionData,
+    nextStatus: 'SAFE' | 'AT RISK'
+  ) => {
+    const userId = user?.id || 'demo_user';
+    const updated = await ProfileService.updateMemberSafetyStatus(userId, member.id || '', nextStatus);
+
+    if (updated) {
+      setConnections((prev) =>
+        prev.map((c) =>
+          c.id === member.id
+            ? { ...c, safety_status: nextStatus, last_checkin: new Date().toISOString() }
+            : c
+        )
+      );
+
+      // Trigger high-priority pop-up toast showing whether they are safe or in danger
+      triggerSafetyToast({
+        id: `toast_member_${Date.now()}`,
+        type: nextStatus === 'SAFE' ? 'SAFE' : 'DANGER',
+        memberName: member.name,
+        relationship: member.relationship_label,
+        contactValue: member.contact_value,
+        inviteMethod: member.invite_method,
+        title: nextStatus === 'SAFE' ? `Safety Confirmed: ${member.name}` : `Emergency Alert: ${member.name} in Danger!`,
+        message:
+          nextStatus === 'SAFE'
+            ? `${member.name} (${member.relationship_label}) has checked in and is confirmed SAFE.`
+            : `⚠️ ${member.name} (${member.relationship_label}) has reported being IN DANGER / AT RISK! Please verify their safety immediately.`
+      });
+
+      window.dispatchEvent(
+        new CustomEvent('family-safety-status-updated', {
+          detail: { member: updated, newStatus: nextStatus }
+        })
+      );
+    }
   };
 
   const handleAcceptConnection = async (member: FamilyConnectionData) => {
@@ -119,7 +223,7 @@ export const FamilySafetyCircle: React.FC = () => {
 
     if (member.safety_status === 'SAFE') {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-sm">
           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
           {t('safe')}
         </span>
@@ -128,9 +232,9 @@ export const FamilySafetyCircle: React.FC = () => {
 
     if (member.safety_status === 'AT RISK') {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-500/20 text-red-300 border border-red-500/40 flex items-center gap-1 animate-pulse">
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-600/30 text-red-200 border border-red-500/60 flex items-center gap-1 animate-pulse shadow-md shadow-red-950/40">
           <AlertCircle className="w-3 h-3 text-red-400" />
-          {t('atRisk')}
+          IN DANGER
         </span>
       );
     }
@@ -145,18 +249,120 @@ export const FamilySafetyCircle: React.FC = () => {
   const isDisaster = appMode === 'DISASTER';
 
   return (
-    <div className={`p-6 rounded-3xl space-y-5 shadow-xl transition-all duration-300 ${
-      isDisaster
-        ? 'bg-gradient-to-br from-red-950/90 via-slate-950/90 to-red-950/70 border-2 border-red-600/80 shadow-red-600/30'
-        : 'bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-slate-800 shadow-cyan-950/20'
-    }`}>
+    <div
+      className={`p-6 rounded-3xl space-y-5 shadow-xl transition-all duration-300 relative ${
+        isDisaster
+          ? 'bg-gradient-to-br from-red-950/90 via-slate-950/90 to-red-950/70 border-2 border-red-600/80 shadow-red-600/30'
+          : 'bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-slate-800 shadow-cyan-950/20'
+      }`}
+    >
+      {/* =========================================================================
+          FLOATING HIGH-PRIORITY SAFETY STATUS POP-UP TOAST
+          Shows real-time status popups when members mark themselves Safe or in Danger
+         ========================================================================= */}
+      {statusToast && (
+        <div
+          className="fixed top-20 right-4 sm:right-6 z-50 max-w-sm sm:max-w-md w-[calc(100vw-2rem)] sm:w-auto animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto"
+          role="alert"
+          aria-live="assertive"
+        >
+          <div
+            className={`p-4 rounded-3xl backdrop-blur-2xl shadow-2xl flex items-start gap-3.5 relative overflow-hidden group ${
+              statusToast.type === 'DANGER'
+                ? 'bg-red-950/95 border-2 border-red-500 shadow-red-950/70 text-red-100'
+                : 'bg-slate-900/95 border-2 border-emerald-500/70 shadow-emerald-950/50 text-emerald-100'
+            }`}
+          >
+            {/* Ambient Radial Accent Glow */}
+            <div
+              className={`absolute -top-10 -right-10 w-28 h-28 rounded-full blur-2xl pointer-events-none ${
+                statusToast.type === 'DANGER' ? 'bg-red-500/30' : 'bg-emerald-500/20'
+              }`}
+            />
+
+            {/* Status Avatar / Icon */}
+            <div
+              className={`w-11 h-11 rounded-2xl border flex items-center justify-center text-xl shrink-0 shadow-md ${
+                statusToast.type === 'DANGER'
+                  ? 'bg-red-600 text-white border-red-400 animate-pulse'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+              }`}
+            >
+              {statusToast.type === 'DANGER' ? (
+                <AlertOctagon className="w-6 h-6" />
+              ) : (
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              )}
+            </div>
+
+            {/* Content Body */}
+            <div className="flex-1 min-w-0 pr-1 space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                    statusToast.type === 'DANGER'
+                      ? 'bg-red-500 text-white border-red-400 animate-pulse'
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  }`}
+                >
+                  {statusToast.type === 'DANGER' ? 'CRITICAL ALERT' : 'SAFETY CHECK-IN'}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Just now</span>
+              </div>
+
+              <h4 className="text-sm font-bold text-white tracking-tight">
+                {statusToast.title}
+              </h4>
+              <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                {statusToast.message}
+              </p>
+
+              {/* Emergency Action Buttons if in Danger */}
+              {statusToast.type === 'DANGER' && statusToast.contactValue && (
+                <div className="flex items-center gap-2 pt-1.5">
+                  <a
+                    href={`tel:${statusToast.contactValue.replace(/[\s\-\(\)]/g, '')}`}
+                    className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    <span>Call Now</span>
+                  </a>
+                  {statusToast.inviteMethod === 'whatsapp' && (
+                    <a
+                      href={`https://wa.me/${statusToast.contactValue.replace(/[\s\-\(\)]/g, '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Dismiss Button */}
+            <button
+              onClick={() => setStatusToast(null)}
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors shrink-0"
+              aria-label="Dismiss status notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Invite Acceptance Toast Notification */}
       {inviteNotification && (
-        <div className={`p-3.5 rounded-2xl text-xs flex items-center justify-between animate-in fade-in ${
-          isDisaster
-            ? 'bg-red-950/90 border border-red-500/50 text-red-200'
-            : 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-200'
-        }`}>
+        <div
+          className={`p-3.5 rounded-2xl text-xs flex items-center justify-between animate-in fade-in ${
+            isDisaster
+              ? 'bg-red-950/90 border border-red-500/50 text-red-200'
+              : 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-200'
+          }`}
+        >
           <div className="flex items-center gap-2">
             <CheckCircle2 className={`w-4 h-4 shrink-0 ${isDisaster ? 'text-red-400' : 'text-cyan-400'}`} />
             <span>{inviteNotification}</span>
@@ -171,34 +377,50 @@ export const FamilySafetyCircle: React.FC = () => {
       )}
 
       {/* Header Row */}
-      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 ${
-        isDisaster ? 'border-red-900/60' : 'border-slate-800'
-      }`}>
+      <div
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 ${
+          isDisaster ? 'border-red-900/60' : 'border-slate-800'
+        }`}
+      >
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-2xl ${
-            isDisaster
-              ? 'bg-red-600/20 text-red-400 border border-red-500/40'
-              : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-          }`}>
+          <div
+            className={`p-2.5 rounded-2xl ${
+              isDisaster
+                ? 'bg-red-600/20 text-red-400 border border-red-500/40'
+                : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+            }`}
+          >
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <h2 className={`text-base font-extrabold tracking-wide font-mono ${
-              isDisaster ? 'text-red-300' : 'text-white'
-            }`}>
-              {isDisaster ? '🚨 FAMILY SAFETY CIRCLE (RESCUE MONITORING)' : 'FAMILY SAFETY CIRCLE'}
-            </h2>
-            <p className={`text-xs font-medium ${isDisaster ? 'text-red-200/80' : 'text-slate-400'}`}>
+            <div className="flex items-center gap-2">
+              <h2
+                className={`text-base font-extrabold tracking-wide font-mono ${
+                  isDisaster ? 'text-red-300' : 'text-white'
+                }`}
+              >
+                {isDisaster ? '🚨 FAMILY SAFETY CIRCLE (RESCUE MONITORING)' : 'FAMILY SAFETY CIRCLE'}
+              </h2>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                  myStatus === 'SAFE'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-red-600 text-white font-black animate-pulse'
+                }`}
+              >
+                Your Status: {myStatus === 'SAFE' ? 'SAFE' : 'IN DANGER'}
+              </span>
+            </div>
+            <p className={`text-xs font-medium mt-0.5 ${isDisaster ? 'text-red-200/80' : 'text-slate-400'}`}>
               {isDisaster
-                ? 'Emergency contact safety monitoring & live check-ins active'
-                : 'Connect family & emergency contacts for live status updates & check-ins'
-              }
+                ? 'Emergency contact safety monitoring & live check-in coordination active'
+                : 'Coordinate live safe/danger updates with family members & emergency contacts'}
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setIsInviteModalOpen(true)}
             className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md active:scale-95 ${
@@ -211,26 +433,39 @@ export const FamilySafetyCircle: React.FC = () => {
             <span>{t('inviteFamily')}</span>
           </button>
 
+          {/* User's Own Account Safety Status Toggle */}
           <button
             onClick={toggleMyStatus}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 shadow-md active:scale-95 ${
               myStatus === 'SAFE'
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
-                : 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/30'
+                : 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/40 animate-pulse'
             }`}
+            title="Toggle your own safety status to broadcast to family"
           >
             <Shield className="w-4 h-4" />
-            <span>{myStatus === 'SAFE' ? t('imSafe') : t('imAtRisk')}</span>
+            <span>{myStatus === 'SAFE' ? "I'm Safe" : "I'm in Danger"}</span>
           </button>
 
           <button
-            onClick={() => alert(`GPS Location broadcasted: ${selectedLocation.city}, ${selectedLocation.state || selectedLocation.country}`)}
+            onClick={() => {
+              triggerSafetyToast({
+                id: `loc_${Date.now()}`,
+                type: 'SAFE',
+                memberName: user?.name || 'You',
+                relationship: 'Self',
+                title: 'GPS Location Broadcasted',
+                message: `Your live coordinates (${selectedLocation.city}, ${
+                  selectedLocation.state || selectedLocation.country
+                }) have been broadcasted to your Family Circle.`
+              });
+            }}
             className={`p-2 rounded-xl text-xs font-medium ${
               isDisaster
                 ? 'bg-red-950/80 hover:bg-red-900/80 border border-red-700/80 text-red-300'
                 : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300'
             }`}
-            title="Broadcast Location"
+            title="Broadcast GPS Coordinates"
           >
             <Share2 className="w-4 h-4" />
           </button>
@@ -241,7 +476,7 @@ export const FamilySafetyCircle: React.FC = () => {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-36 bg-slate-950/70 border border-slate-800 rounded-2xl" />
+            <div key={i} className="h-44 bg-slate-950/70 border border-slate-800 rounded-2xl" />
           ))}
         </div>
       ) : connections.length === 0 ? (
@@ -262,63 +497,117 @@ export const FamilySafetyCircle: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {connections.map((member) => (
-            <div
-              key={member.id}
-              className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between gap-3 relative proximity-card group"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-100">{member.name}</h3>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {member.relationship_label}
-                  </span>
-                </div>
-                {getStatusBadge(member)}
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          {connections.map((member) => {
+            const isMemberDanger = member.safety_status === 'AT RISK';
 
-              <div className="space-y-1 text-xs">
-                <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
-                  <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
-                  <span className="truncate">{selectedLocation.city}, {selectedLocation.state || selectedLocation.country}</span>
+            return (
+              <div
+                key={member.id}
+                className={`p-4 rounded-2xl border flex flex-col justify-between gap-3.5 relative transition-all duration-300 ${
+                  isMemberDanger
+                    ? 'bg-gradient-to-br from-red-950/80 via-slate-950/90 to-red-950/50 border-red-500/70 shadow-lg shadow-red-950/40'
+                    : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                {/* Header with Name, Relationship & Status Badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-bold text-slate-100 truncate">{member.name}</h3>
+                    <span className="text-[11px] text-slate-400 font-medium block">
+                      {member.relationship_label}
+                    </span>
+                  </div>
+                  {getStatusBadge(member)}
                 </div>
-                <div className="text-[10px] text-slate-500">
-                  Contact: {member.contact_value}
+
+                {/* Location & Last Check-in Details */}
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                    <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
+                    <span className="truncate">
+                      {selectedLocation.city}, {selectedLocation.state || selectedLocation.country}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                    <span>Contact: {member.contact_value}</span>
+                    <span className="font-mono text-slate-400">
+                      {formatCheckinTime(member.last_checkin)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Safe/Danger Mode Toggle & Communication Controls */}
+                <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                  {/* Status Toggle Switch */}
+                  <div className="flex items-center justify-between gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800">
+                    <span className="text-[10px] text-slate-400 font-medium pl-1">
+                      Mode: <strong className={isMemberDanger ? 'text-red-400' : 'text-emerald-400'}>{isMemberDanger ? 'Danger' : 'Safe'}</strong>
+                    </span>
+
+                    {isMemberDanger ? (
+                      <button
+                        onClick={() => handleToggleMemberStatus(member, 'SAFE')}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/50 flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                        title="Mark family member as Safe"
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span>Mark Safe</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleToggleMemberStatus(member, 'AT RISK')}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-red-600/30 hover:bg-red-600/50 text-red-300 border border-red-500/50 flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                        title="Report family member in Danger / At Risk"
+                      >
+                        <AlertCircle className="w-3 h-3 text-red-400" />
+                        <span>Report Danger</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Communication Action Row */}
+                  <div className="flex items-center gap-1.5">
+                    {member.invite_method === 'whatsapp' ? (
+                      <a
+                        href={`https://wa.me/${member.contact_value.replace(/[\s\-\(\)]/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-center text-xs font-semibold text-emerald-300 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>WhatsApp</span>
+                      </a>
+                    ) : (
+                      <a
+                        href={`mailto:${member.contact_value}`}
+                        className="flex-1 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-center text-xs font-semibold text-cyan-300 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Email</span>
+                      </a>
+                    )}
+
+                    <a
+                      href={`tel:${member.contact_value.replace(/[\s\-\(\)]/g, '')}`}
+                      className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-400 transition-colors"
+                      title="Direct Call"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                    </a>
+
+                    <button
+                      onClick={() => handleRemoveConnection(member.id)}
+                      className="p-1.5 rounded-xl bg-slate-900 hover:bg-red-950/80 border border-slate-800 hover:border-red-500/40 text-slate-400 hover:text-red-400 transition-colors"
+                      title="Remove Connection"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                {member.invite_method === 'whatsapp' ? (
-                  <a
-                    href={`https://wa.me/${member.contact_value.replace(/[\s\-\(\)]/g, '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-center text-xs font-semibold text-emerald-300 transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>WhatsApp</span>
-                  </a>
-                ) : (
-                  <a
-                    href={`mailto:${member.contact_value}`}
-                    className="flex-1 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-center text-xs font-semibold text-cyan-300 transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Email</span>
-                  </a>
-                )}
-
-                <button
-                  onClick={() => handleRemoveConnection(member.id)}
-                  className="p-1.5 rounded-xl bg-slate-900 hover:bg-red-950/80 border border-slate-800 hover:border-red-500/40 text-slate-400 hover:text-red-400 transition-colors"
-                  title="Remove Connection"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
