@@ -15,12 +15,10 @@ export interface DisasterAlert {
 export interface ShelterData {
   id: string;
   name: string;
+  type: string;
   distanceKm: number;
-  status: 'Open' | 'Full' | 'Closing Soon';
-  capacityPercentage: number;
-  accessible: boolean;
+  status: 'Open / Verified Facility';
   address: string;
-  contactNumber: string;
   latitude: number;
   longitude: number;
 }
