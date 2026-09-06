@@ -443,3 +443,133 @@ html.light-mode .nova-assistant-card .text-slate-300,
 html.light-mode .nova-assistant-card .text-slate-400 {
   color: #cbd5e1 !important;
 }
+
+/* ==================================================
+   DEMO MODE IN-PAGE TOGGLE & TRANSITION ANIMATIONS
+================================================== */
+
+/* Radial / Diagonal Color Wash Sweep */
+@keyframes colorWashSweepAmber {
+  0% {
+    background-position: 100% 0%;
+    opacity: 0.3;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.01);
+  }
+  100% {
+    background-position: 0% 100%;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes colorWashSweepRed {
+  0% {
+    background-position: 100% 0%;
+    opacity: 0.3;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.01);
+  }
+  100% {
+    background-position: 0% 100%;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.mode-sweep-amber {
+  background-size: 200% 200%;
+  animation: colorWashSweepAmber 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mode-sweep-red {
+  background-size: 200% 200%;
+  animation: colorWashSweepRed 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toggle Glow Ripple Effect */
+@keyframes toggleRipple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8), 0 0 0 0 rgba(239, 68, 68, 0.8);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 30px 15px rgba(245, 158, 11, 0.4), 0 0 30px 15px rgba(239, 68, 68, 0.4);
+    transform: scale(1.06);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0), 0 0 0 0 rgba(239, 68, 68, 0);
+    transform: scale(1);
+  }
+}
+
+.toggle-ripple-active {
+  animation: toggleRipple 600ms ease-out 1;
+}
+
+/* Calm Icon Breathing Pulse */
+@keyframes calmBreathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.3));
+  }
+  50% {
+    transform: scale(1.07);
+    filter: drop-shadow(0 0 25px rgba(6, 182, 212, 0.7));
+  }
+}
+
+.calm-breathe-icon {
+  animation: calmBreathe 3.5s ease-in-out infinite;
+}
+
+/* Header Flash Scale Pulse */
+@keyframes headerFlashPulse {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.03);
+    filter: brightness(1.3);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.header-flash-trigger {
+  animation: headerFlashPulse 500ms ease-out 1;
+}
+
+/* Staggered Card Entry Delays */
+.stagger-card-1 {
+  animation: cardSlideCascade 500ms cubic-bezier(0.16, 1, 0.3, 1) 80ms backwards;
+}
+.stagger-card-2 {
+  animation: cardSlideCascade 500ms cubic-bezier(0.16, 1, 0.3, 1) 160ms backwards;
+}
+.stagger-card-3 {
+  animation: cardSlideCascade 500ms cubic-bezier(0.16, 1, 0.3, 1) 240ms backwards;
+}
+.stagger-card-4 {
+  animation: cardSlideCascade 500ms cubic-bezier(0.16, 1, 0.3, 1) 320ms backwards;
+}
+
+@keyframes cardSlideCascade {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
