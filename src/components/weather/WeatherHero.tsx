@@ -8,6 +8,32 @@ export const WeatherHero: React.FC = () => {
   const isDisaster = appMode === 'DISASTER';
   const isRisk = appMode === 'RISK';
 
+  // In Risk Mode, display only the Weather Risk Alert banner (removing weather details below it)
+  if (isRisk) {
+    return (
+      <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 border-2 border-amber-500/80 shadow-2xl shadow-amber-950/50 backdrop-blur-xl flex items-center justify-between gap-4 text-amber-100 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/40 shrink-0">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white shadow-sm animate-pulse tracking-wider font-mono">
+                HIGH RISK
+              </span>
+              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider font-mono">
+                WEATHER RISK ALERT
+              </span>
+            </div>
+            <p className="text-sm text-slate-150 font-medium mt-1 leading-snug">
+              Precipitation surplus & wind gusts expected in your sector. Precautionary readiness active.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`hero-weather-card relative overflow-hidden rounded-3xl p-6 sm:p-8 transition-all duration-500 shadow-2xl ${
