@@ -64,8 +64,23 @@ const REGIONAL_POINTS: LocationPoint[] = [
 ];
 
 export class MapService {
+  private static owmApiKey = import.meta.env.VITE_WEATHER_API_KEY || '106e93574a362a1d4fb0eeb66599e08d';
   private static radarCache: { data: RainRadarMetadata; cachedAt: number } | null = null;
   private static geocodeCache = new Map<string, ReverseGeocodeResult>();
+
+  /**
+   * Returns OpenWeatherMap Weather Maps 1.0 precipitation tile layer URL
+   */
+  public static getOwmPrecipitationTileUrl(): string {
+    return `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${this.owmApiKey}`;
+  }
+
+  /**
+   * Returns OpenWeatherMap Weather Maps 1.0 temperature tile layer URL
+   */
+  public static getOwmTemperatureTileUrl(): string {
+    return `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${this.owmApiKey}`;
+  }
 
   /**
    * Fetches latest rain radar metadata from RainViewer public API
